@@ -14,38 +14,80 @@ class Index extends Component
     public $search = '';
     public $isEdit = false;
 
-      public $perPage = 5; // Default menampilkan 10 data
+    public $perPage = 5; // Default menampilkan 10 data
 
     // Pastikan saat jumlah perPage diubah, halaman balik ke nomor 1
+   
+   
     public function updatingPerPage()
     {
         $this->resetPage();
     }
+
+     public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+    
+    // ✅ RULES
+ public function rules()
+{
+    return [
+          'kode_category' => 'required|unique:categorys,kode_category,' . $this->category_id,
+          'nama_category' => 'required|unique:categorys,nama_category,' . $this->category_id,
+    ];
+}
+
+    public function messages()
+    {
+        return [
+            'kode_category.required' => 'Kode wajib diisi',
+            'kode_category.unique'   => 'Kode sudah ada',
+            'nama_category.required'   => 'Kode wajib diisi',
+            'nama_category.unique'   => 'Nama sudah ada',
+        ];
+    }
+
+
+
     // Fungsi Simpan (Tambah & Update)
     public function store()
     {
-        $this->validate([
-            'kode_category' => 'required|unique:categorys,kode_category,' . $this->category_id,
-            'nama_category' => 'required',
-        ]);
+        $this->validate();
 
         Category::updateOrCreate(['id' => $this->category_id], [
-            'kode_category' => $this->kode_category,
-            'nama_category' => $this->nama_category,
+            'kode_category'   => $this->kode_category,
+            'nama_category'   => $this->nama_category,
+           
         ]);
 
-        $this->dispatch('close-modal'); // Menutup modal via Alpine
+        $this->dispatch('swal:success', message: 'Data berhasil diubah');
+        $this->dispatch('close-modal');
+
         $this->resetInput();
+    }
+
+        public function updated($field)
+    {
+        $this->validateOnly($field, $this->rules(), $this->messages());
     }
 
     public function edit($id)
     {
+
+        $this->resetErrorBag();
+        $this->resetValidation();
+
         $cat = Category::findOrFail($id);
+
         $this->category_id = $id;
         $this->kode_category = $cat->kode_category;
         $this->nama_category = $cat->nama_category;
-        $this->isEdit = true;
+       
+        $this->dispatch('open-tambah-modal');
     }
+
+    
 
  public function delete($id)
 {

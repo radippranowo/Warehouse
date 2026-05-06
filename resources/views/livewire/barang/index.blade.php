@@ -19,12 +19,11 @@
                             <div class="d-flex align-items-center gap-2">
                                 <div class="search-box">
                                     <div class="position-relative">
-                                        <input id="search" name="search" wire:model.live.debounce.500ms="search" type="text"
-                                            class="form-control btn-rounded" placeholder="Cari barang..."
+                                        <input id="search" name="search" wire:model.live.debounce.500ms="search"
+                                            type="text" class="form-control btn-rounded" placeholder="Cari barang..."
                                             style="padding-left: 40px;">
                                         <i class="bx bx-search-alt search-icon" style="left: 13px;"></i>
                                     </div>
-
                                 </div>
 
                                 <div class="dropdown custom-no-anim">
@@ -47,6 +46,14 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="col-sm-4">
+                            <div class="text-sm-end">
+                                <button type="button"
+                                    class="btn btn-success btn-rounded waves-effect waves-light mb-2">
+                                    <i class="mdi mdi-plus me-1"></i> Filter
+                                </button>
+                            </div>
+                        </div>
 
                     </div>
                     <div class="table-responsive">
@@ -62,7 +69,7 @@
                                     <th class="align-middle">Group</th>
                                     <th class="align-middle">Stok</th>
                                     <th class="align-middle">Harga</th>
-                                    <th class="align-middle">Deskripsi</th>
+                                    {{-- <th class="align-middle">Deskripsi</th> --}}
                                     <th class="align-middle">Action</th>
                                 </tr>
                             </thead>
@@ -83,17 +90,17 @@
                                             </span>
                                         </td>
                                         <td>Rp {{ number_format($item->harga, 0, ',', '.') }}</td>
-                                        <td> {{ $item->deskripsi }}</td>
+                                        {{-- <td> {{ $item->deskripsi }}</td> --}}
                                         <td>
-                                            <a class="btn btn-sm btn-soft-info" wire:click="edit({{ $item->id }})"
-                                                class="text-success"
-                                                onclick="window.dispatchEvent(new CustomEvent('open-tambah-modal'))">
-                                                <i class="mdi mdi-pencil-outline "></i>
+                                            <a class="btn btn-sm btn-soft-info border-0 shadow-sm bx bx-pencil font-size-16"
+                                                wire:click="edit({{ $item->id }})">
                                             </a>
-                                            <a class="btn btn-sm btn-soft-danger"
+                                            <a class="btn btn-soft-danger btn-sm border-0 shadow-sm bx bx-trash font-size-16"
                                                 wire:click="$dispatch('confirm-delete', { id: {{ $item->id }}, nama: '{{ $item->nama_barang }}' })">
-                                                <i class="mdi mdi-delete-outline"></i>
+
                                             </a>
+
+                                        </td>
                                         </td>
                                     </tr>
                                 @endforeach
@@ -105,119 +112,160 @@
         </div>
     </div>
 
-    <div x-data="{ open: false }" x-init="window.addEventListener('open-tambah-modal', () => { open = true });
-    window.addEventListener('close-modal', () => { open = false });" x-cloak wire:ignore>
+    <div x-data="{ open: false }" x-init="window.addEventListener('open-tambah-modal', () => open = true);
+    window.addEventListener('close-modal', () => open = false);" x-cloak wire:ignore.self>
 
-        <div class="modal fade" :class="open ? 'show d-block' : 'd-none'" x-show="open" @click.self="open = false"
-            @keydown.escape.window="open = false" style="background-color: rgba(0,0,0,0.5); z-index: 1060;">
+        <div class="modal fade modal-blur" :class="open ? 'show d-block' : 'd-none'" x-show="open"
+            x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+            style="background-color: rgba(0,0,0,0.5); z-index: 1060;" @click.self="open = false"
+            @keydown.escape.window="open = false">
 
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
+
                     <div class="modal-header">
-                      
-                        <button type="button" class="btn-close" @click="open = false"></button>
+                        <h5>Form Barang</h5>
+                        <button class="btn-close" @click="open=false"></button>
                     </div>
 
                     <form wire:submit.prevent="store">
                         <div class="modal-body">
                             <div class="row">
                                 <div class="col-md-4 mb-3">
-                                    <label for="kode_barang" class="form-label">Kode Barang</label>
-                                    <input type="text" id="kode_barang" name="kode_barang" wire:model="kode_barang"
-                                        class="form-control @error('kode_barang') is-invalid @enderror">
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <label for="part_number" class="form-label">Part Number</label>
-                                    <input type="text" id="part_number" name="part_number" wire:model="part_number" class="form-control">
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <label  for="nama_barang" class="form-label">Nama Barang</label>
-                                    <input type="text" id="nama_barang" name="nama_barang" wire:model="nama_barang" class="form-control">
+                                    <label for="kode_barang" class="form-label">Kode</label>
+                                    <input id="kode_barang" name="kode_barang" wire:model.live="kode_barang"
+                                        class="form-control @error('kode_barang') is-invalid @enderror"
+                                        placeholder="Kode">
+                                    @error('kode_barang')
+                                        <small class="text-danger">{{ $message }}</small>
+                                    @enderror
                                 </div>
 
+                                <div class="col-md-4 mb-3">
+                                    <label for="part_number" class="form-label">Part Number</label>
+                                    <input id="part_number" name="part_number" wire:model.live="part_number"
+                                        class="form-control" placeholder="Part">
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="nama_barang" class="form-label">Nama</label>
+                                    <input id="nama_barang" name="nama_barang" wire:model.live="nama_barang"
+                                        class="form-control @error('nama_barang') is-invalid @enderror"
+                                        placeholder="Nama">
+                                    @error('nama_barang')
+                                        <small class="text-danger">{{ $message }}</small>
+                                    @enderror
+                                </div>
+
+                                <!-- SELECT2 -->
                                 <div class="col-md-4 mb-3" wire:ignore>
-                                    <label for="category_code" class="form-label">Kategori</label>
-                                    <select id="category_code" name="category_code" wire:model="category_code" class="form-control select2">
-                                        <option value="">Pilih</option>
+                                    <label for="category_code" class="form-label">Category</label>
+                                    <select id="category_code" wire:model="category_code"
+                                        class="form-control select2" @if ($barang_id) disabled @endif>
+                                        <option value="" disabled {{ $barang_id ? 'hidden' : '' }}>Pilih
+                                        </option>
+
                                         @foreach ($categories as $cat)
-                                            <option value="{{ $cat->kode_category }}">{{ $cat->nama_category }}
+                                            <option value="{{ $cat->kode_category }}">
+                                                {{ $cat->nama_category }}
                                             </option>
                                         @endforeach
                                     </select>
+
+                                    @if ($barang_id)
+                                        <input type="hidden" wire:model="category_code">
+                                    @endif
                                 </div>
+
                                 <div class="col-md-4 mb-3" wire:ignore>
                                     <label for="merk_code" class="form-label">Merk</label>
-                                    <select id="merk_code" name="merk_code" wire:model="merk_code" class="form-control select2">
-                                        <option value="">Pilih</option>
+                                    <select id="merk_code" wire:model="merk_code" class="form-control select2"
+                                        @if ($barang_id) disabled @endif>
+                                        <option value="" disabled {{ $barang_id ? 'hidden' : '' }}>Pilih
+                                        </option>
+
                                         @foreach ($merks as $m)
-                                            <option value="{{ $m->kode_merk }}">{{ $m->nama_merk }}</option>
+                                            <option value="{{ $cat->kode_merk }}">
+                                                {{ $m->nama_merk }}
+                                            </option>
                                         @endforeach
                                     </select>
+
+                                    @if ($barang_id)
+                                        <input type="hidden" wire:model="merk_code">
+                                    @endif
                                 </div>
+
                                 <div class="col-md-4 mb-3" wire:ignore>
                                     <label for="group_code" class="form-label">Group</label>
-                                    <select id="group_code" name="group_code" wire:model="group_code" class="form-control select2">
-                                        <option value="">Pilih</option>
+                                    <select id="group_code" wire:model="group_code" class="form-control select2"
+                                        @if ($barang_id) disabled @endif>
+                                        <option value="" disabled {{ $barang_id ? 'hidden' : '' }}>Pilih
+                                        </option>
+
                                         @foreach ($groups as $g)
-                                            <option value="{{ $g->kode_group }}">{{ $g->nama_group }}</option>
+                                            <option value="{{ $g->kode_group }}">
+                                                {{ $g->nama_group }}
+                                            </option>
                                         @endforeach
                                     </select>
+
+                                    @if ($barang_id)
+                                        <input type="hidden" wire:model="group_code">
+                                    @endif
                                 </div>
 
                                 <div class="col-md-4 mb-3">
                                     <label for="stok" class="form-label">Stok</label>
-                                    <input type="number" id="stok" name="stok" wire:model="stok" class="form-control">
+                                    <input type="number" id="stok" name="stok" wire:model.live="stok"
+                                        class="form-control" placeholder="Stok">
                                 </div>
+
                                 <div class="col-md-8 mb-3">
-                                    <label for="harga" class="form-label">Harga Satuan</label>
+                                    <label for="harga" class="form-label">Harga</label>
                                     <div class="input-group">
                                         <span class="input-group-text">Rp</span>
-                                        <input type="number" id="harga" name="harga" wire:model="harga" class="form-control">
+                                        <input type="number" id="harga" name="harga" wire:model.live="harga"
+                                            class="form-control">
                                     </div>
                                 </div>
 
                                 <div class="col-12">
-                                    <label for="deskripsi" class="form-label">Deskripsi</label>
-                                    <textarea id="deskripsi" name="deskripsi" wire:model="deskripsi" class="form-control" rows="3"></textarea>
+                                    <textarea id="deskrpsi" name="deskripsi" wire:model.live="deskripsi" class="form-control"></textarea>
                                 </div>
+
                             </div>
                         </div>
 
-
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" @click="open = false">Close</button>
-                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                            <button type="button" class="btn btn-secondary" @click="open=false">Close</button>
+                            <button type="submit" class="btn btn-primary">Simpan</button>
                         </div>
                     </form>
+
                 </div>
             </div>
         </div>
     </div>
-    {{-- <script>
-    document.addEventListener('livewire:navigated', () => { // Gunakan ini jika pakai Livewire 3
-        initSelect2();
-    });
+    <script>
+        document.addEventListener('livewire:init', () => {
 
-    function initSelect2() {
-        $('#select2-category').select2({
-            dropdownParent: $('.modal'), // Agar dropdown muncul di atas modal
-            width: '100%' // Agar lebar select penuh
+            $('#category_code').on('change', function() {
+                Livewire.dispatch('setCategory', $(this).val());
+            });
+
+            $('#merk_code').on('change', function() {
+                Livewire.dispatch('setMerk', $(this).val());
+            });
+
+            $('#group_code').on('change', function() {
+                Livewire.dispatch('setGroup', $(this).val());
+            });
+
         });
-
-        // Sinkronisasi Select2 dengan Livewire
-        $('#select2-category').on('change', function(e) {
-            var data = $('#select2-category').select2("val");
-            @this.set('category_code', data);
-        });
-    }
-
-    // Inisialisasi ulang saat modal dibuka via Alpine
-    window.addEventListener('open-tambah-modal', () => {
-        setTimeout(() => {
-            initSelect2();
-        }, 100);
-    });
-</script> --}}
+    </script>
 
     <script>
         // Listener Konfirmasi Hapus

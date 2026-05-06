@@ -1,5 +1,5 @@
 <div>
-    <div x-data="{
+    <div x-cloak x-data="{
         inputs: @entangle('inputs').live,
     
         add() {
@@ -22,10 +22,9 @@
             }
         }
     }">
-
         <div class="card shadow-sm">
             <div class="card-body border-bottom d-flex justify-content-between">
-                <h5 class="mb-0">BARANG</h5>
+                <h5 class="mb-0">Barang</h5>
 
                 <a href="{{ route('barang.index') }}" wire:navigate
                     class="btn btn-primary btn-rounded waves-effect waves-light mb-2">
@@ -41,16 +40,16 @@
                         <table class="table table-bordered align-middle">
                             <thead class="table-light">
                                 <tr>
-                                      <th style="width: 10%;">Kode<span class="text-danger"></span></th>
-                                        <th style="width: 15%;">Part Number<span class="text-danger"></span></th>
-                                        <th style="width: 15%;">Nama<span class="text-danger"></span></th>
-                                        <th style="width: 15%;">Kategori <span class="text-danger"></span></th>
-                                        <th style="width: 15%;">Merk <span class="text-danger"></span></th>
-                                        <th style="width: 15%;">Group <span class="text-danger"></span></th>
-                                        <th style="width: 8%;">Stok</th>
-                                        <th style="width: 15%;">Harga</th>
-                                        {{-- <th style="width: 20%;">Deskripsi</th>  --}}
-                                        <th style="width: 5%;" class="text-center">Aksi</th>
+                                    <th style="width: 10%;">Kode<span class="text-danger"></span></th>
+                                    <th style="width: 15%;">Part Number<span class="text-danger"></span></th>
+                                    <th style="width: 15%;">Nama<span class="text-danger"></span></th>
+                                    <th style="width: 15%;">Kategori <span class="text-danger"></span></th>
+                                    <th style="width: 15%;">Merk <span class="text-danger"></span></th>
+                                    <th style="width: 15%;">Group <span class="text-danger"></span></th>
+                                    <th style="width: 8%;">Stok</th>
+                                    <th style="width: 15%;">Harga</th>
+                                    {{-- <th style="width: 20%;">Deskripsi</th>  --}}
+                                    <th style="width: 5%;" class="text-center">Aksi</th>
                                 </tr>
                             </thead>
 
@@ -113,7 +112,7 @@
                                                 <div class="invalid-feedback-absolute"
                                                     x-text="$wire.errors.get(`inputs.${index}.category_code`)[0]">
                                                 </div>
-                                            </template>
+                                            </template>  
                                         </td>
 
                                         <!-- MERK -->
@@ -157,7 +156,7 @@
                                         </td>
 
                                         <!-- STOK -->
-                                       <td class="position-relative">
+                                        <td class="position-relative">
                                             <input type="number" :id="'stok_' + item.id" x-model.number="item.stok"
                                                 class="form-control form-control-sm text-center">
                                         </td>
@@ -169,10 +168,9 @@
                                         </td>
 
                                         <!-- AKSI -->
-                                        <td class="text-center">
+                                       <td class="position-relative">
                                             <button type="button" @click="remove(index)" x-show="inputs.length > 1"
                                                 class="btn btn-soft-danger btn-sm border-0 shadow-sm bx bx-trash font-size-16">
-
                                             </button>
                                         </td>
 

@@ -44,7 +44,7 @@
                             <div class="text-sm-end">
                                 <button type="button" class="btn btn-success btn-rounded waves-effect waves-light mb-2"
                                     onclick="window.dispatchEvent(new CustomEvent('open-tambah-modal'))">
-                                    <i class="mdi mdi-plus me-1"></i> Add New Barang
+                                    <i class="mdi mdi-plus me-1"></i> Kategori
                                 </button>
                             </div>
                         </div>
@@ -69,11 +69,9 @@
                                         <td>{{ $item->nama_category }}</td>
                                         <td>
                                             <div class="d-flex gap-3">
-                                                <a href="javascript:void(0);" wire:click="edit({{ $item->id }})"
-                                                    class="text-success"
-                                                    onclick="window.dispatchEvent(new CustomEvent('open-tambah-modal'))">
-                                                    <i class="mdi mdi-pencil font-size-18"></i>
-                                                </a>
+                                               <a class="btn btn-sm btn-soft-info border-0 shadow-sm bx bx-pencil font-size-16"
+                                                wire:click="edit({{ $item->id }})">
+                                            </a>
                                                 <a class="btn btn-sm btn-soft-danger"
                                                     wire:click="$dispatch('confirm-delete-category', { id: {{ $item->id }}, nama: '{{ $item->nama_category }}' })">
                                                     <i class="mdi mdi-delete-outline"></i>
@@ -94,47 +92,62 @@
         </div>
     </div>
 
-    <div x-data="{ open: false }" x-init="window.addEventListener('open-tambah-modal', () => { open = true });
-    window.addEventListener('close-modal', () => { open = false });" x-cloak wire:ignore>
+     <div x-data="{ open: false }" x-init="window.addEventListener('open-tambah-modal', () => open = true);
+    window.addEventListener('close-modal', () => open = false);" x-cloak wire:ignore.self>
 
-        <div class="modal fade" :class="open ? 'show d-block' : 'd-none'" x-show="open" @click.self="open = false"
-            @keydown.escape.window="open = false" style="background-color: rgba(0,0,0,0.5); z-index: 1060;">
+        <div class="modal fade modal-blur" :class="open ? 'show d-block' : 'd-none'" x-show="open"
+            x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+            style="background-color: rgba(0,0,0,0.5); z-index: 1060;" @click.self="open = false"
+            @keydown.escape.window="open = false">
 
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
+
                     <div class="modal-header">
-                        <h5 class="modal-title">{{ $isEdit ? 'Edit Category' : 'Add New Category' }}</h5>
-                        <button type="button" class="btn-close" @click="open = false"></button>
+                        <h5>Form Categori</h5>
+                        <button class="btn-close" @click="open=false"></button>
                     </div>
 
                     <form wire:submit.prevent="store">
                         <div class="modal-body">
                             <div class="row">
-                                <div class="col-12 mb-3">
-                                    <label>Kode Kategori</label>
-                                    <input type="text" wire:model="kode_category" class="form-control">
+
+                                <div class="col-md-4 mb-3">
+                                      <label for="kode_category" class="form-label">Kode</label>
+                                    <input id="kode_category" name="kode_category" wire:model.live="kode_category"
+                                        class="form-control @error('kode_category') is-invalid @enderror"
+                                        placeholder="Kode">
                                     @error('kode_category')
-                                        <span class="text-danger small">{{ $message }}</span>
+                                        <small class="text-danger">{{ $message }}</small>
                                     @enderror
                                 </div>
-                                <div class="col-12 mb-3">
-                                    <label>Nama Kategori</label>
-                                    <input type="text" wire:model="nama_category" class="form-control">
+
+                                <div class="col-md-4 mb-3">
+                                      <label for="nama_category" class="form-label">Nama</label>
+                                    <input id="nama_category" name="nama_category" wire:model.live="nama_category"
+                                        class="form-control @error('nama_category') is-invalid @enderror"
+                                        placeholder="Nama">
                                     @error('nama_category')
-                                        <span class="text-danger small">{{ $message }}</span>
+                                        <small class="text-danger">{{ $message }}</small>
                                     @enderror
                                 </div>
                             </div>
                         </div>
+
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" @click="open = false">Close</button>
-                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                            <button type="button" class="btn btn-secondary" @click="open=false">Close</button>
+                            <button type="submit" class="btn btn-primary">Simpan</button>
                         </div>
                     </form>
+
                 </div>
             </div>
         </div>
     </div>
+  
+
     <script>
         // Listener Konfirmasi Hapus
         window.addEventListener('confirm-delete-category', event => {

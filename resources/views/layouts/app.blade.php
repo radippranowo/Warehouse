@@ -1,105 +1,93 @@
 <!doctype html>
 <html lang="en">
 
-
-<!-- Mirrored from themesbrand.com/skote/layouts/chat.html by HTTrack Website Copier/3.x [XR&CO'2014], Tue, 15 Nov 2022 07:57:53 GMT -->
-
 <head>
     <base href="{{ url('/') }}/">
     <meta charset="utf-8" />
     <title>Logistik</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta content="Premium Multipurpose Admin & Dashboard Template" name="description" />
-    <meta content="Themesbrand" name="author" />
-    <!-- App favicon -->
-  
-   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <meta content="Logistik Admin" name="description" />
+    <meta content="Apex-inspired" name="author" />
+
     <link rel="shortcut icon" href="{{ asset('assets/images/favicon.ico') }}">
-    
+
+    <!-- Public Sans (Apex/Vuexy signature font) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Existing libs (kept for page-level compatibility) -->
     <link href="{{ asset('assets/libs/bootstrap-touchspin/jquery.bootstrap-touchspin.min.css') }}" rel="stylesheet" type="text/css" />
     <link href="{{ asset('assets/libs/select2/css/select2.min.css') }}" rel="stylesheet" type="text/css" />
-    <!-- Bootstrap Css -->
     <link href="{{ asset('assets/css/bootstrap.min.css') }}" id="bootstrap-style" rel="stylesheet" type="text/css" />
-    <!-- Icons Css -->
     <link href="{{ asset('assets/css/icons.min.css') }}" rel="stylesheet" type="text/css" />
-    <!-- App Css-->
     <link href="{{ asset('assets/css/app.min.css') }}" id="app-style" rel="stylesheet" type="text/css" />
- 
 
     @livewireStyles
- 
+
+    <style>
+        [x-cloak] { display: none !important; }
+        #side-menu .sub-menu { display: none; }
+        #side-menu li.mm-active > .sub-menu { display: block; }
+    </style>
 </head>
 
 <body data-sidebar="dark" data-layout-mode="light">
-
-    <!-- <body data-layout="horizontal" data-topbar="dark"> -->
-
-    <!-- Begin page -->
     <div id="layout-wrapper">
 
-
+        @persist('topbar')
+        <!-- ============== TOPBAR ============== -->
         <header id="page-topbar">
             <div class="navbar-header">
                 <div class="d-flex">
-                    <!-- LOGO -->
                     <div class="navbar-brand-box">
-                        <a href="index.html" class="logo logo-dark">
+                        <a href="{{ route('dashboard.index') }}" class="logo logo-dark">
                             <span class="logo-sm">
-                                <img src="{{ asset('assets/images/logo.svg') }}" alt="" height="22">
+                                <img src="{{ asset('assets/images/logo-sm.png') }}" alt="" height="22">
                             </span>
                             <span class="logo-lg">
-                                <img src="{{ asset('assets/images/logo-dark.png') }}" alt="" height="17">
+                                <img src="{{ asset('assets/images/logo-dark.png') }}" alt="" height="20">
                             </span>
                         </a>
-
-                        <a href="index.html" class="logo logo-light">
+                        <a href="{{ route('dashboard.index') }}" class="logo logo-light">
                             <span class="logo-sm">
-                                <img src="{{ asset('assets/images/logo-light.svg') }}" alt="" height="22">
+                                <img src="{{ asset('assets/images/logo-sm.png') }}" alt="" height="22">
                             </span>
                             <span class="logo-lg">
-                                <img src="{{ asset('assets/images/logo-light.png') }}" alt="" height="19">
+                                <img src="{{ asset('assets/images/logo-light.png') }}" alt="" height="20">
                             </span>
                         </a>
                     </div>
 
-                    <button type="button" class="btn btn-sm px-3 font-size-16 header-item waves-effect"
-                        id="vertical-menu-btn">
+                    <button type="button" class="btn btn-sm px-3 font-size-16 header-item waves-effect" id="vertical-menu-btn">
                         <i class="fa fa-fw fa-bars"></i>
                     </button>
-
-                    <!-- App Search-->
-                    <form class="app-search d-none d-lg-block">
-                        {{-- <div class="position-relative">
-                            <input type="text" class="form-control" placeholder="Search...">
-                            <span class="bx bx-search-alt"></span>
-                        </div> --}}
-                    </form>
                 </div>
 
                 <div class="d-flex">
-                    <div class="dropdown d-none d-lg-inline-block ms-1">
-                        <button type="button" class="btn header-item noti-icon waves-effect"
-                            data-bs-toggle="fullscreen">
+                    <div class="dropdown d-none d-lg-inline-block ms-1" wire:ignore>
+                        <button type="button" class="btn header-item noti-icon waves-effect" data-bs-toggle="fullscreen">
                             <i class="bx bx-fullscreen"></i>
                         </button>
                     </div>
 
                     <div class="dropdown d-inline-block">
-                        <button type="button" class="btn header-item noti-icon waves-effect"
-                            id="page-header-notifications-dropdown" data-bs-toggle="dropdown" aria-haspopup="true"
-                            aria-expanded="false">
+                        <button type="button" class="btn header-item noti-icon waves-effect position-relative"
+                            id="page-header-notifications-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                             <i class="bx bx-bell bx-tada"></i>
                             <span class="badge bg-danger rounded-pill">3</span>
                         </button>
-                        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end p-0"
-                            aria-labelledby="page-header-notifications-dropdown">
+                        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end p-0" aria-labelledby="page-header-notifications-dropdown">
                             <div class="p-3">
                                 <div class="row align-items-center">
                                     <div class="col">
-                                        <h6 class="m-0" key="t-notifications"> Notifications </h6>
+                                        <h6 class="m-0"> Notifications </h6>
                                     </div>
                                     <div class="col-auto">
-                                        <a href="#!" class="small" key="t-view-all"> View All</a>
+                                        <a href="#!" class="small"> View All</a>
                                     </div>
                                 </div>
                             </div>
@@ -112,28 +100,10 @@
                                             </span>
                                         </div>
                                         <div class="flex-grow-1">
-                                            <h6 class="mb-1" key="t-your-order">Your order is placed</h6>
+                                            <h6 class="mb-1">Your order is placed</h6>
                                             <div class="font-size-12 text-muted">
-                                                <p class="mb-1" key="t-grammer">If several languages coalesce the
-                                                    grammar</p>
-                                                <p class="mb-0"><i class="mdi mdi-clock-outline"></i> <span
-                                                        key="t-min-ago">3 min ago</span></p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </a>
-                                <a href="javascript: void(0);" class="text-reset notification-item">
-                                    <div class="d-flex">
-                                        <img src="assets/images/users/avatar-3.jpg"
-                                            class="me-3 rounded-circle avatar-xs" alt="user-pic">
-                                        <div class="flex-grow-1">
-                                            <h6 class="mb-1">James Lemire</h6>
-                                            <div class="font-size-12 text-muted">
-                                                <p class="mb-1" key="t-simplified">It will seem like simplified
-                                                    English.
-                                                </p>
-                                                <p class="mb-0"><i class="mdi mdi-clock-outline"></i> <span
-                                                        key="t-hours-ago">1 hours ago</span></p>
+                                                <p class="mb-1">If several languages coalesce the grammar</p>
+                                                <p class="mb-0"><i class="mdi mdi-clock-outline"></i> <span>3 min ago</span></p>
                                             </div>
                                         </div>
                                     </div>
@@ -146,29 +116,10 @@
                                             </span>
                                         </div>
                                         <div class="flex-grow-1">
-                                            <h6 class="mb-1" key="t-shipped">Your item is shipped</h6>
+                                            <h6 class="mb-1">Your item is shipped</h6>
                                             <div class="font-size-12 text-muted">
-                                                <p class="mb-1" key="t-grammer">If several languages coalesce the
-                                                    grammar</p>
-                                                <p class="mb-0"><i class="mdi mdi-clock-outline"></i> <span
-                                                        key="t-min-ago">3 min ago</span></p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </a>
-
-                                <a href="javascript: void(0);" class="text-reset notification-item">
-                                    <div class="d-flex">
-                                        <img src="assets/images/users/avatar-4.jpg"
-                                            class="me-3 rounded-circle avatar-xs" alt="user-pic">
-                                        <div class="flex-grow-1">
-                                            <h6 class="mb-1">Salena Layfield</h6>
-                                            <div class="font-size-12 text-muted">
-                                                <p class="mb-1" key="t-occidental">As a skeptical Cambridge friend
-                                                    of
-                                                    mine occidental.</p>
-                                                <p class="mb-0"><i class="mdi mdi-clock-outline"></i> <span
-                                                        key="t-hours-ago">1 hours ago</span></p>
+                                                <p class="mb-1">If several languages coalesce the grammar</p>
+                                                <p class="mb-0"><i class="mdi mdi-clock-outline"></i> <span>1 hours ago</span></p>
                                             </div>
                                         </div>
                                     </div>
@@ -176,192 +127,104 @@
                             </div>
                             <div class="p-2 border-top d-grid">
                                 <a class="btn btn-sm btn-link font-size-14 text-center" href="javascript:void(0)">
-                                    <i class="mdi mdi-arrow-right-circle me-1"></i> <span key="t-view-more">View
-                                        More..</span>
+                                    <i class="mdi mdi-arrow-right-circle me-1"></i> <span>View More..</span>
                                 </a>
                             </div>
                         </div>
                     </div>
 
                     <div class="dropdown d-inline-block">
-                        <button type="button" class="btn header-item waves-effect" id="page-header-user-dropdown"
-                            data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <img class="rounded-circle header-profile-user" src="assets/images/users/avatar-1.jpg"
-                                alt="Header Avatar">
-                            <span class="d-none d-xl-inline-block ms-1" key="t-henry">Henry</span>
+                        <button type="button" class="btn header-item waves-effect" id="page-header-user-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <img class="rounded-circle header-profile-user" src="{{ asset('assets/images/users/avatar-1.jpg') }}" alt="Header Avatar">
+                            <span class="d-none d-xl-inline-block ms-1">Henry</span>
                             <i class="mdi mdi-chevron-down d-none d-xl-inline-block"></i>
                         </button>
                         <div class="dropdown-menu dropdown-menu-end">
-                            <!-- item-->
-                            <a class="dropdown-item" href="#"><i
-                                    class="bx bx-user font-size-16 align-middle me-1"></i>
-                                <span key="t-profile">Profile</span></a>
-                            <a class="dropdown-item" href="#"><i
-                                    class="bx bx-wallet font-size-16 align-middle me-1"></i> <span
-                                    key="t-my-wallet">My
-                                    Wallet</span></a>
-                            <a class="dropdown-item d-block" href="#"><span
-                                    class="badge bg-success float-end">11</span><i
-                                    class="bx bx-wrench font-size-16 align-middle me-1"></i> <span
-                                    key="t-settings">Settings</span></a>
-                            <a class="dropdown-item" href="#"><i
-                                    class="bx bx-lock-open font-size-16 align-middle me-1"></i> <span
-                                    key="t-lock-screen">Lock screen</span></a>
+                            <a class="dropdown-item" href="#"><i class="bx bx-user font-size-16 align-middle me-1"></i> Profile</a>
+                            <a class="dropdown-item" href="#"><i class="bx bx-wallet font-size-16 align-middle me-1"></i> My Wallet</a>
+                            <a class="dropdown-item d-block" href="#"><span class="badge bg-success float-end">11</span><i class="bx bx-wrench font-size-16 align-middle me-1"></i> Settings</a>
+                            <a class="dropdown-item" href="#"><i class="bx bx-lock-open font-size-16 align-middle me-1"></i> Lock screen</a>
                             <div class="dropdown-divider"></div>
-                            <a class="dropdown-item text-danger" href="#"><i
-                                    class="bx bx-power-off font-size-16 align-middle me-1 text-danger"></i> <span
-                                    key="t-logout">Logout</span></a>
+                            <a class="dropdown-item text-danger" href="#"><i class="bx bx-power-off font-size-16 align-middle me-1 text-danger"></i> Logout</a>
                         </div>
                     </div>
-
-                    <div class="dropdown d-inline-block">
-                        <button type="button" class="btn header-item noti-icon right-bar-toggle waves-effect">
-                            <i class="bx bx-cog bx-spin"></i>
-                        </button>
-                    </div>
-
                 </div>
             </div>
         </header>
+        @endpersist
 
-        <!-- ========== Left Sidebar Start ========== -->
+        @persist('sidebar')
+        <!-- ============== SIDEBAR ============== -->
         <div class="vertical-menu">
-
             <div data-simplebar class="h-100">
-
-                <!--- Sidemenu -->
                 <div id="sidebar-menu">
-                    <!-- Left Menu Start -->
                     <ul class="metismenu list-unstyled" id="side-menu">
+                        <li>
+                            <a href="{{ route('dashboard.index') }}" wire:navigate.hover class="waves-effect">
+                                <i class="bx bx-home-circle"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
 
+                        <li class="menu-title" key="t-menu">Apps &amp; Pages</li>
 
                         <li>
-                            <a wire:navigate.hover href="{{route('dashboard.index') }}" class="waves-effect">
-                                <i class="bx bx-chat"></i>
-                                <span key="t-chat">Dashboard</span>
+                            <a href="javascript: void(0);" class="has-arrow waves-effect">
+                                <i class="bx bx-package"></i>
+                                <span>Data Master</span>
                             </a>
+                            <ul class="sub-menu" aria-expanded="false">
+                                <li><a href="{{ route('barang.index') }}" wire:navigate.hover>Barang</a></li>
+                                <li><a href="{{ route('category.index') }}" wire:navigate.hover>Kategori</a></li>
+                                <li><a href="{{ route('merk.index') }}" wire:navigate.hover>Merk</a></li>
+                                <li><a href="{{ route('group.index') }}" wire:navigate.hover>Group</a></li>
+                            </ul>
                         </li>
 
                         <li>
                             <a href="javascript: void(0);" class="has-arrow waves-effect">
-                                <i class="bx bx-calendar"></i>
-                                <span key="t-dashboards">Data Master</span>
+                                <i class="bx bx-transfer"></i>
+                                <span>Transaksi</span>
                             </a>
                             <ul class="sub-menu" aria-expanded="false">
-                                <li><a href="{{ route('barang.index') }}" wire:navigate.hover key="t-tui-calendar">Barang</a></li>
-                                <li><a href="{{ route('category.index') }}" wire:navigate.hover key="t-full-calendar">Kategori</a>
-                                    <li><a href="{{ route('merk.index') }}" wire:navigate.hover key="t-full-calendar">Merk</a>
-                                        <li><a href="{{ route('group.index') }}" wire:navigate.hover key="t-full-calendar">Group</a>
-                                </li>
+                                <li><a href="{{ route('barangmasuk.index') }}" wire:navigate.hover>Barang Masuk</a></li>
+                                <li><a href="{{ route('barangkeluar.index') }}" wire:navigate.hover>Barang Keluar</a></li>
                             </ul>
+                        </li>
+
+                        <li>
+                            <a href="{{ route('pr.index') }}" wire:navigate.hover class="waves-effect">
+                                <i class="bx bx-receipt"></i>
+                                <span>Pre-Order</span>
+                            </a>
                         </li>
                     </ul>
                 </div>
-                <!-- Sidebar -->
             </div>
         </div>
-        <!-- Left Sidebar End -->
+        @endpersist
 
-
-
-        <!-- ============================================================== -->
-        <!-- Start right Content here -->
-        <!-- ============================================================== -->
-
+        <!-- ============== MAIN ============== -->
         <div class="main-content">
-
             <div class="page-content">
                 <div class="container-fluid">
-
                     {{ $slot }}
-
-                </div> <!-- container-fluid -->
-            </div>
-            <!-- End Page-content -->
-
-
-            <footer class="footer">
-                <div class="container-fluid">
-                    <div class="row">
-                        <div class="col-sm-6">
-                            <div class="text-sm-end d-none d-sm-block">
-                                Design & Develop by KTU
-                            </div>
-                        </div>
-                    </div>
                 </div>
-            </footer>
+            </div>
         </div>
-        <!-- end main content-->
-
     </div>
-    <!-- END layout-wrapper -->
-
-    <!-- Right Sidebar -->
-    <div class="right-bar">
-        <div data-simplebar class="h-100">
-            <div class="rightbar-title d-flex align-items-center px-3 py-4">
-
-                <h5 class="m-0 me-2">Settings</h5>
-
-                <a href="javascript:void(0);" class="right-bar-toggle ms-auto">
-                    <i class="mdi mdi-close noti-icon"></i>
-                </a>
-            </div>
-
-            <!-- Settings -->
-            <hr class="mt-0" />
-            <h6 class="text-center mb-0">Choose Layouts</h6>
-
-            <div class="p-4">
-                <div class="mb-2">
-                    <img src="assets/images/layouts/layout-1.jpg" class="img-thumbnail" alt="layout images">
-                </div>
-
-                <div class="form-check form-switch mb-3">
-                    <input class="form-check-input theme-choice" type="checkbox" id="light-mode-switch" checked>
-                    <label class="form-check-label" for="light-mode-switch">Light Mode</label>
-                </div>
-
-                <div class="mb-2">
-                    <img src="assets/images/layouts/layout-2.jpg" class="img-thumbnail" alt="layout images">
-                </div>
-                <div class="form-check form-switch mb-3">
-                    <input class="form-check-input theme-choice" type="checkbox" id="dark-mode-switch">
-                    <label class="form-check-label" for="dark-mode-switch">Dark Mode</label>
-                </div>
-
-                <div class="mb-2">
-                    <img src="assets/images/layouts/layout-3.jpg" class="img-thumbnail" alt="layout images">
-                </div>
-                <div class="form-check form-switch mb-3">
-                    <input class="form-check-input theme-choice" type="checkbox" id="rtl-mode-switch">
-                    <label class="form-check-label" for="rtl-mode-switch">RTL Mode</label>
-                </div>
-
-                <div class="mb-2">
-                    <img src="assets/images/layouts/layout-4.jpg" class="img-thumbnail" alt="layout images">
-                </div>
-                <div class="form-check form-switch mb-5">
-                    <input class="form-check-input theme-choice" type="checkbox" id="dark-rtl-mode-switch">
-                    <label class="form-check-label" for="dark-rtl-mode-switch">Dark RTL Mode</label>
-                </div>
-
-
-            </div>
-
-        </div> <!-- end slimscroll-menu-->
-    </div>
-    <!-- /Right-bar -->
-
-    <!-- Right bar overlay-->
-    <div class="rightbar-overlay"></div>
 
     @livewireScripts
 
-    
-
-   
+    <script>
+        if (window.location.hostname !== 'localhost') {
+            const originalLog = console.log;
+            console.log = function() {
+                if (arguments[0] === 'pressed') return;
+                originalLog.apply(console, arguments);
+            };
+        }
+    </script>
 
     <!-- JAVASCRIPT -->
     <script src="{{ asset('assets/libs/jquery/jquery.min.js') }}"></script>
@@ -369,16 +232,70 @@
     <script src="{{ asset('assets/libs/metismenu/metisMenu.min.js') }}"></script>
     <script src="{{ asset('assets/libs/simplebar/simplebar.min.js') }}"></script>
     <script src="{{ asset('assets/libs/node-waves/waves.min.js') }}"></script>
-    {{-- <script src="{{asset('assets/js/pages/form-advanced.init.js')}}"></script> --}}
     <script src="{{ asset('assets/js/app.js') }}"></script>
-
     <script src="{{ asset('assets/libs/select2/js/select2.min.js') }}"></script>
-    <script src="{{ asset('assets/libs/jquery.repeater/jquery.repeater.min.js')}}"></script>
-    <script src="{{ asset('assets/js/pages/form-repeater.int.js')}}"></script>
-  
-  
+    <script src="{{ asset('assets/libs/jquery.repeater/jquery.repeater.min.js') }}"></script>
+    <script src="{{ asset('assets/js/pages/form-repeater.int.js') }}"></script>
+
+    <script data-navigate-once>
+        // Sidebar toggle (works through wire:navigate)
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('#vertical-menu-btn');
+            if (!btn) return;
+            e.preventDefault();
+
+            var body = document.body;
+            if (window.innerWidth >= 992) {
+                var size = body.getAttribute('data-sidebar-size');
+                body.setAttribute('data-sidebar-size', (!size || size === 'lg') ? 'sm' : 'lg');
+                body.classList.remove('sidebar-enable');
+            } else {
+                body.classList.toggle('sidebar-enable');
+                body.removeAttribute('data-sidebar-size');
+            }
+        });
+
+        function syncActiveMenu() {
+            if (!window.jQuery) return;
+            var $menu = jQuery('#side-menu');
+            if (!$menu.length) return;
+
+            var path = window.location.pathname.replace(/\/+$/, '') || '/';
+
+            $menu.find('a').removeClass('active mm-active');
+            $menu.find('li').removeClass('mm-active');
+            $menu.find('ul.sub-menu').removeClass('mm-show').attr('aria-expanded', 'false');
+            $menu.find('a.has-arrow').attr('aria-expanded', 'false');
+
+            $menu.find('a').each(function () {
+                var href = this.getAttribute('href') || '';
+                if (!href || href.indexOf('javascript') === 0) return;
+                try { href = new URL(this.href).pathname.replace(/\/+$/, '') || '/'; } catch (e) { return; }
+                if (href !== path) return;
+
+                var $a = jQuery(this);
+                $a.addClass('active');
+                $a.parents('li').addClass('mm-active');
+                $a.parents('ul.sub-menu').addClass('mm-show').attr('aria-expanded', 'true');
+                $a.parents('ul.sub-menu').siblings('a.has-arrow').addClass('mm-active').attr('aria-expanded', 'true');
+            });
+        }
+
+        function runSync() {
+            syncActiveMenu();
+            requestAnimationFrame(syncActiveMenu);
+        }
+
+        if (window.jQuery) {
+            jQuery(runSync);
+        } else if (document.readyState !== 'loading') {
+            runSync();
+        } else {
+            document.addEventListener('DOMContentLoaded', runSync);
+        }
+
+        document.addEventListener('livewire:navigated', runSync);
+    </script>
+
 </body>
-
-<!-- Mirrored from themesbrand.com/skote/layouts/chat.html by HTTrack Website Copier/3.x [XR&CO'2014], Tue, 15 Nov 2022 07:57:53 GMT -->
-
 </html>
