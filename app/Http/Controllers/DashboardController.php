@@ -14,7 +14,7 @@ class DashboardController extends Controller
         $stats = Cache::remember('dashboard.stats', 60, function () {
             return [
                 'barang'   => DB::table('barangs')->count(),
-                'category' => DB::table('categorys')->count(),
+                'category' => DB::table('categories')->count(),
                 'merk'     => DB::table('merks')->count(),
                 'group'    => DB::table('groups')->count(),
             ];

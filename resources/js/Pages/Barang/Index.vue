@@ -74,8 +74,10 @@ const editForm = useForm({
     category_code: '',
     merk_code: '',
     group_code: '',
-    stok: '',
-    harga: '',
+    satuan: 'pcs',
+    harga_beli: 0,
+    harga_jual: 0,
+    min_stok: 0,
     deskripsi: '',
 });
 
@@ -89,8 +91,10 @@ function openEdit(item) {
         category_code: item.category_code ?? '',
         merk_code: item.merk_code ?? '',
         group_code: item.group_code ?? '',
-        stok: item.stok ?? '',
-        harga: item.harga ?? '',
+        satuan: item.satuan ?? 'pcs',
+        harga_beli: item.harga_beli ?? 0,
+        harga_jual: item.harga_jual ?? 0,
+        min_stok: item.min_stok ?? 0,
         deskripsi: item.deskripsi ?? '',
     });
     showEditModal.value = true;
@@ -114,8 +118,10 @@ function submitEdit() {
             category_code: editForm.category_code,
             merk_code:     editForm.merk_code,
             group_code:    editForm.group_code,
-            stok:          editForm.stok,
-            harga:         editForm.harga,
+            satuan:        editForm.satuan,
+            harga_beli:    editForm.harga_beli,
+            harga_jual:    editForm.harga_jual,
+            min_stok:      editForm.min_stok,
             deskripsi:     editForm.deskripsi,
             kategori: cat ? { kode_category: cat.kode_category, nama_category: cat.nama_category } : null,
             merk:     mrk ? { kode_merk: mrk.kode_merk, nama_merk: mrk.nama_merk } : null,
@@ -243,8 +249,9 @@ function fmtRp(v) {
                                     <th>Kategori</th>
                                     <th>Merk</th>
                                     <th>Group</th>
-                                    <th>Stok</th>
-                                    <th>Harga</th>
+                                    <th>Satuan</th>
+                                    <th>Total Stok</th>
+                                    <th>Harga Jual</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -257,15 +264,20 @@ function fmtRp(v) {
                                     <td>{{ item.kategori?.nama_category }}</td>
                                     <td>{{ item.merk?.nama_merk }}</td>
                                     <td>{{ item.group?.nama_group }}</td>
+                                    <td>{{ item.satuan ?? '-' }}</td>
                                     <td>
                                         <span class="badge rounded-pill badge-soft-info font-size-12">
-                                            {{ item.stok ?? 'N/A' }}
+                                            {{ item.stok_total ?? 0 }}
                                         </span>
                                     </td>
-                                    <td>{{ fmtRp(item.harga) }}</td>
+                                    <td>{{ fmtRp(item.harga_jual) }}</td>
                                     <td>
+                                        <Link :href="`/barang/${item.id}`"
+                                            class="btn btn-sm btn-soft-primary border-0 shadow-sm bx bx-show font-size-16"
+                                            title="Detail">
+                                        </Link>
                                         <button
-                                            class="btn btn-sm btn-soft-info border-0 shadow-sm bx bx-pencil font-size-16"
+                                            class="btn btn-sm btn-soft-info border-0 shadow-sm bx bx-pencil font-size-16 ms-1"
                                             @click="openEdit(item)"
                                         ></button>
                                         <button
@@ -275,7 +287,7 @@ function fmtRp(v) {
                                     </td>
                                 </tr>
                                 <tr v-if="!displayBarangs.data.length" key="empty">
-                                    <td colspan="10" class="text-center text-muted py-4">Tidak ada data</td>
+                                    <td colspan="11" class="text-center text-muted py-4">Tidak ada data</td>
                                 </tr>
                             </TransitionGroup>
                         </table>
@@ -357,13 +369,21 @@ function fmtRp(v) {
                         <small class="text-danger" v-if="editForm.errors.group_code">{{ editForm.errors.group_code }}</small>
                     </div>
 
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label">Stok</label>
-                        <input v-model="editForm.stok" type="number" class="form-control">
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Satuan</label>
+                        <input v-model="editForm.satuan" class="form-control">
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label">Harga</label>
-                        <input v-model="editForm.harga" type="number" class="form-control">
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Harga Beli</label>
+                        <input v-model="editForm.harga_beli" type="number" class="form-control">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Harga Jual</label>
+                        <input v-model="editForm.harga_jual" type="number" class="form-control">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Min Stok</label>
+                        <input v-model="editForm.min_stok" type="number" class="form-control">
                     </div>
                     <div class="col-md-12 mb-3">
                         <label class="form-label">Deskripsi</label>

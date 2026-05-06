@@ -310,7 +310,7 @@ function destroy(item) {
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label">{{ labelKode }}</label>
-                        <input v-model="form[fieldKode]" class="form-control"
+                        <input v-model="form[fieldKode]" class="form-control" :disabled="isEdit"
                             :class="{ 'is-invalid': form.errors[fieldKode] }"
                             :placeholder="labelKode"
                             @input="form.errors[fieldKode] && (delete form.errors[fieldKode])">

@@ -33,8 +33,8 @@ class Index extends Component
  public function rules()
 {
     return [
-          'kode_category' => 'required|unique:categorys,kode_category,' . $this->category_id,
-          'nama_category' => 'required|unique:categorys,nama_category,' . $this->category_id,
+          'kode_category' => 'required|unique:categories,kode_category,' . $this->category_id,
+          'nama_category' => 'required|unique:categories,nama_category,' . $this->category_id,
     ];
 }
 

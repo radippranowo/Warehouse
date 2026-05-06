@@ -8,14 +8,8 @@ const page = usePage();
 function initSidebar() {
     if (!window.jQuery) return;
     const $ = window.jQuery;
-    const $menu = $('#side-menu');
-    if (!$menu.length) return;
-
-    if ($menu.data('metisMenu')) {
-        try { $menu.metisMenu('dispose'); } catch (e) {}
-    }
-    if (typeof $menu.metisMenu === 'function') $menu.metisMenu();
-
+    // metisMenu init dipindah ke highlightActive() — biar setiap navigasi
+    // dispose & re-init bersih. Di sini cuma bind tombol toggle sidebar.
     $('#vertical-menu-btn').off('click.layout').on('click.layout', function (e) {
         e.preventDefault();
         const body = document.body;
@@ -45,15 +39,41 @@ function highlightActive() {
     if (!window.jQuery) return;
     const $ = window.jQuery;
     const path = window.location.pathname;
-    $('#side-menu a').removeClass('active');
-    $('#side-menu a').each(function () {
+    const $menu = $('#side-menu');
+    if (!$menu.length) return;
+
+    // Dispose metisMenu dulu — supaya inline style="height:..." yang dia pasang
+    // untuk animasi collapse/expand bisa kita reset. Tanpa ini, submenu lama
+    // tetap punya height fix dan menimpa item lain (kelihatan overlap).
+    if ($menu.data('metisMenu')) {
+        try { $menu.metisMenu('dispose'); } catch (e) {}
+    }
+
+    // Reset visual state penuh: class + inline style yang ditinggalkan metisMenu.
+    $menu.find('a').removeClass('active');
+    $menu.find('ul.sub-menu').removeClass('mm-show mm-collapse mm-collapsing in').removeAttr('style');
+    $menu.find('li.mm-active').removeClass('mm-active');
+
+    // Pilih match paling spesifik (href terpanjang). Trailing slash supaya
+    // /barang tidak false-match untuk /barangmasuk dst.
+    let best = null;
+    $menu.find('a').each(function () {
         const href = $(this).attr('href');
         if (!href || href === '#' || href.startsWith('javascript')) return;
-        if (path === href || (href !== '/' && path.startsWith(href))) {
-            $(this).addClass('active');
-            $(this).parents('ul.sub-menu').addClass('mm-show').parent().addClass('mm-active');
+        const isMatch = path === href || (href !== '/' && path.startsWith(href + '/'));
+        if (isMatch && (!best || href.length > best.href.length)) {
+            best = { el: this, href };
         }
     });
+
+    if (best) {
+        const $el = $(best.el).addClass('active');
+        $el.parents('ul.sub-menu').addClass('mm-show');
+        $el.parents('li').addClass('mm-active');
+    }
+
+    // Re-init metisMenu — dia akan baca state class sekarang sebagai initial.
+    if (typeof $menu.metisMenu === 'function') $menu.metisMenu();
 }
 
 let removeNavListener = null;
@@ -71,7 +91,7 @@ onMounted(async () => {
     });
 
     // Warmup prefetch (1-by-1 supaya tidak menyaturasi PHP).
-    const warmupRoutes = ['/category', '/merk', '/group', '/barang'];
+    const warmupRoutes = ['/category', '/merk', '/group', '/gudang', '/barang', '/stok', '/mutasi'];
     const warmup = async () => {
         for (const url of warmupRoutes) {
             if (window.location.pathname === url) continue;
@@ -152,15 +172,21 @@ onBeforeUnmount(() => {
                                 <li><Link href="/category" prefetch cache-for="5m">Kategori</Link></li>
                                 <li><Link href="/merk"     prefetch cache-for="5m">Merk</Link></li>
                                 <li><Link href="/group"    prefetch cache-for="5m">Group</Link></li>
+                                <li><Link href="/gudang"   prefetch cache-for="5m">Gudang</Link></li>
                             </ul>
+                        </li>
+                        <li>
+                            <Link href="/stok" prefetch cache-for="5m" class="waves-effect">
+                                <i class="bx bx-buildings"></i><span>Stok Gudang</span>
+                            </Link>
                         </li>
                         <li>
                             <a href="javascript:void(0);" class="has-arrow waves-effect">
                                 <i class="bx bx-transfer"></i><span>Transaksi</span>
                             </a>
                             <ul class="sub-menu" aria-expanded="false">
-                                <li><Link href="/barangmasuk"  prefetch cache-for="5m">Barang Masuk</Link></li>
-                                <li><Link href="/barangkeluar" prefetch cache-for="5m">Barang Keluar</Link></li>
+                                <li><Link href="/mutasi"        prefetch cache-for="5m">Riwayat Mutasi</Link></li>
+                              
                             </ul>
                         </li>
                         <li>

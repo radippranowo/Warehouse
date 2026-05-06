@@ -17,8 +17,8 @@ class CategoryRequest extends FormRequest
         $id = $this->route('category')?->id;
 
         return [
-            'kode_category' => ['required', Rule::unique('categorys', 'kode_category')->ignore($id)],
-            'nama_category' => ['required', Rule::unique('categorys', 'nama_category')->ignore($id)],
+            'kode_category' => ['required', Rule::unique('categories', 'kode_category')->ignore($id)],
+            'nama_category' => ['required', Rule::unique('categories', 'nama_category')->ignore($id)],
         ];
     }
 

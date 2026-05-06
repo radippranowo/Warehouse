@@ -6,31 +6,58 @@ use Illuminate\Database\Eloquent\Model;
 
 class Barang extends Model
 {
-protected $guarded = [];
-protected $fillable = [
-    'kode_barang', 
-    'part_number', 
-    'nama_barang', 
-    'category_code', 
-    'merk_code', 
-    'group_code', 
-    'stok', 
-    'harga', 
-    'deskripsi'
-];
+    protected $guarded = [];
+    protected $fillable = [
+        'kode_barang',
+        'part_number',
+        'nama_barang',
+        'category_code',
+        'merk_code',
+        'group_code',
+        'satuan',
+        'harga_beli',
+        'harga_jual',
+        'min_stok',
+        'deskripsi',
+        'is_active',
+    ];
+
+    protected $casts = [
+        'harga_beli' => 'decimal:2',
+        'harga_jual' => 'decimal:2',
+        'min_stok'   => 'integer',
+        'is_active'  => 'boolean',
+    ];
+
     public function kategori()
     {
-        // Menghubungkan kolom category_code di Barangs ke kode_category di Categorys
         return $this->belongsTo(Category::class, 'category_code', 'kode_category');
     }
-      public function merk()
+
+    public function merk()
     {
-        // Menghubungkan kolom category_code di Barangs ke kode_category di Categorys
         return $this->belongsTo(Merk::class, 'merk_code', 'kode_merk');
     }
-      public function group()
+
+    public function group()
     {
-        // Menghubungkan kolom category_code di Barangs ke kode_category di Categorys
         return $this->belongsTo(Group::class, 'group_code', 'kode_group');
+    }
+
+    public function stoks()
+    {
+        return $this->hasMany(BarangStok::class);
+    }
+
+    public function gudangs()
+    {
+        return $this->belongsToMany(Gudang::class, 'barang_stoks')
+            ->withPivot(['stok', 'min_stok'])
+            ->withTimestamps();
+    }
+
+    public function mutasiItems()
+    {
+        return $this->hasMany(StokMutasiItem::class);
     }
 }

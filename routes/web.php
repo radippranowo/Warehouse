@@ -7,7 +7,10 @@ use App\Http\Controllers\BarangController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GroupController;
+use App\Http\Controllers\GudangController;
 use App\Http\Controllers\MerkController;
+use App\Http\Controllers\MutasiController;
+use App\Http\Controllers\StokController;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
@@ -71,8 +74,26 @@ use Inertia\Inertia;
  Route::get('/barang/masters',     [BarangController::class, 'masters'])->name('barang.masters');
  Route::post('/barang/validate',   [BarangController::class, 'validateLive'])->name('barang.validate');
  Route::post('/barang',            [BarangController::class, 'store'])->name('barang.store');
+ Route::get('/barang/{barang}',    [BarangController::class, 'show'])->name('barang.show');
  Route::put('/barang/{barang}',    [BarangController::class, 'update'])->name('barang.update');
  Route::delete('/barang/{barang}', [BarangController::class, 'destroy'])->name('barang.destroy');
+
+// Gudang
+ Route::get('/gudang',            [GudangController::class, 'index'])->name('gudang.index');
+ Route::post('/gudang',           [GudangController::class, 'store'])->name('gudang.store');
+ Route::put('/gudang/{gudang}',   [GudangController::class, 'update'])->name('gudang.update');
+ Route::delete('/gudang/{gudang}',[GudangController::class, 'destroy'])->name('gudang.destroy');
+
+// Mutasi Stok
+ Route::get('/mutasi',            [MutasiController::class, 'index'])->name('mutasi.index');
+ Route::get('/mutasi/create',     [MutasiController::class, 'create'])->name('mutasi.create');
+ Route::post('/mutasi',           [MutasiController::class, 'store'])->name('mutasi.store');
+ Route::get('/mutasi/{mutasi}',         [MutasiController::class, 'show'])->name('mutasi.show');
+ Route::get('/mutasi/{mutasi}/print',   [MutasiController::class, 'print'])->name('mutasi.print');
+
+// Laporan Stok per Gudang
+ Route::get('/stok',              [StokController::class, 'index'])->name('stok.index');
+ Route::get('/stok/{barang}',    [BarangController::class, 'show'])->name('barang.show');
 
 // Logout (login flow belum aktif — endpoint disediakan agar tombol Logout tidak 404)
 Route::post('/logout', function (\Illuminate\Http\Request $request) {

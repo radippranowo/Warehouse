@@ -1,0 +1,282 @@
+<script setup>
+import { ref, watch, computed, nextTick } from 'vue';
+import { router, useForm } from '@inertiajs/vue3';
+import AppLayout from '@/Layouts/AppLayout.vue';
+import Modal from '@/Components/Modal.vue';
+import Pagination from '@/Components/Pagination.vue';
+
+const props = defineProps({
+    gudangs: { type: Object, required: true },
+    filters: { type: Object, required: true },
+});
+
+defineOptions({ layout: AppLayout });
+
+const localData  = ref([...(props.gudangs.data ?? [])]);
+const localTotal = ref(props.gudangs.total ?? 0);
+const animateRows = ref(true);
+
+watch(() => props.gudangs, (val) => {
+    animateRows.value = false;
+    localData.value  = [...(val.data ?? [])];
+    localTotal.value = val.total ?? 0;
+    nextTick(() => { animateRows.value = true; });
+}, { deep: false });
+
+const displayItems = computed(() => ({
+    ...props.gudangs,
+    data:  localData.value,
+    total: localTotal.value,
+}));
+
+const search  = ref(props.filters.search ?? '');
+const perPage = ref(props.filters.perPage ?? 25);
+let timer = null;
+
+function reload(extra = {}) {
+    router.get('/gudang',
+        { search: search.value, perPage: perPage.value, ...extra },
+        { preserveState: true, preserveScroll: true, replace: true, only: ['gudangs', 'filters'] }
+    );
+}
+watch(search, () => { clearTimeout(timer); timer = setTimeout(reload, 300); });
+function changePerPage(n) { perPage.value = n; reload(); }
+
+const showModal = ref(false);
+const isEdit    = ref(false);
+const form = useForm({
+    id: null,
+    kode_gudang: '',
+    nama_gudang: '',
+    alamat: '',
+    penanggung_jawab: '',
+    is_active: true,
+});
+
+function openCreate() {
+    isEdit.value = false;
+    form.reset();
+    form.is_active = true;
+    form.clearErrors();
+    showModal.value = true;
+}
+
+function openEdit(item) {
+    isEdit.value = true;
+    form.clearErrors();
+    Object.assign(form, {
+        id: item.id,
+        kode_gudang: item.kode_gudang ?? '',
+        nama_gudang: item.nama_gudang ?? '',
+        alamat: item.alamat ?? '',
+        penanggung_jawab: item.penanggung_jawab ?? '',
+        is_active: item.is_active ?? true,
+    });
+    showModal.value = true;
+}
+
+function close() { showModal.value = false; }
+
+function submit() {
+    const editing = isEdit.value;
+    const opts = {
+        preserveScroll: true,
+        preserveState: true,
+        only: ['gudangs', 'errors', 'flash'],
+        onSuccess: () => {
+            showModal.value = false;
+            window.toast?.success(`Gudang ${editing ? 'diubah' : 'ditambah'}`);
+            router.flushAll();
+            form.reset();
+        },
+        onError: () => window.toast?.error('Gagal Simpan'),
+    };
+    if (editing) form.put(`/gudang/${form.id}`, opts);
+    else         form.post('/gudang', opts);
+}
+
+function destroy(item) {
+    const doDelete = () => {
+        const snap = [...localData.value];
+        const snapTotal = localTotal.value;
+        localData.value  = localData.value.filter(x => x.id !== item.id);
+        localTotal.value = Math.max(0, snapTotal - 1);
+
+        router.delete(`/gudang/${item.id}`, {
+            preserveScroll: true,
+            preserveState: true,
+            only: ['gudangs', 'flash'],
+            onSuccess: (page) => {
+                const flashError = page.props?.flash?.error;
+                if (flashError) {
+                    localData.value = snap;
+                    localTotal.value = snapTotal;
+                    window.toast?.error(flashError);
+                } else {
+                    window.toast?.success('Gudang dihapus');
+                    router.flushAll();
+                }
+            },
+            onError: () => {
+                localData.value = snap;
+                localTotal.value = snapTotal;
+                window.toast?.error('Gagal menghapus');
+            },
+        });
+    };
+
+    if (window.confirmDialog) {
+        window.confirmDialog({
+            title: `Hapus ${item.nama_gudang}?`,
+            text:  'Data tidak bisa dikembalikan',
+        }).then(ok => { if (ok) doDelete(); });
+    } else if (confirm(`Hapus ${item.nama_gudang}?`)) {
+        doDelete();
+    }
+}
+</script>
+
+<template>
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body border">
+                    <div class="d-flex align-items-center">
+                        <h5 class="mb-0 card-title flex-grow-1">GUDANG</h5>
+                        <div class="flex-shrink-0">
+                            <button class="btn btn-success btn-rounded" @click="openCreate">
+                                <i class="mdi mdi-plus me-1"></i>Tambah Gudang
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <div class="row mb-2">
+                        <div class="col-sm-8">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="search-box">
+                                    <div class="position-relative">
+                                        <input v-model="search" type="text" class="form-control btn-rounded"
+                                            placeholder="Cari kode / nama / PIC..." style="padding-left: 40px;">
+                                        <i class="bx bx-search-alt search-icon" style="left: 13px;"></i>
+                                    </div>
+                                </div>
+                                <div class="dropdown">
+                                    <button class="btn btn-light btn-rounded shadow-sm border dropdown-toggle"
+                                        type="button" data-bs-toggle="dropdown" style="min-width: 70px;">
+                                        {{ perPage }} <i class="mdi mdi-chevron-down ms-1"></i>
+                                    </button>
+                                    <ul class="dropdown-menu shadow rounded-4 border-0 mt-2">
+                                        <li v-for="n in [10, 25, 50, 100]" :key="n">
+                                            <a class="dropdown-item rounded-3" href="javascript:void(0);"
+                                                @click="changePerPage(n)">{{ n }}</a>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <small class="text-muted ms-2">
+                                    Total: <strong>{{ displayItems.total?.toLocaleString('id-ID') }}</strong>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table align-middle table-nowrap">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 50px;">No</th>
+                                    <th>Kode</th>
+                                    <th>Nama</th>
+                                    <th>Alamat</th>
+                                    <th>PIC</th>
+                                    <th>Status</th>
+                                    <th style="width: 140px;">Action</th>
+                                </tr>
+                            </thead>
+                            <TransitionGroup tag="tbody" :name="animateRows ? 'row-fade' : ''">
+                                <tr v-for="(item, i) in displayItems.data" :key="item.id ?? item.kode_gudang">
+                                    <td>{{ (displayItems.current_page - 1) * displayItems.per_page + i + 1 }}</td>
+                                    <td>{{ item.kode_gudang }}</td>
+                                    <td>{{ item.nama_gudang }}</td>
+                                    <td class="text-truncate" style="max-width: 280px;">{{ item.alamat || '-' }}</td>
+                                    <td>{{ item.penanggung_jawab || '-' }}</td>
+                                    <td>
+                                        <span class="badge rounded-pill"
+                                            :class="item.is_active ? 'badge-soft-success' : 'badge-soft-secondary'">
+                                            {{ item.is_active ? 'Aktif' : 'Nonaktif' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-soft-info border-0 shadow-sm bx bx-pencil font-size-16"
+                                            @click="openEdit(item)"></button>
+                                        <button class="btn btn-soft-danger btn-sm border-0 shadow-sm bx bx-trash font-size-16 ms-1"
+                                            @click="destroy(item)"></button>
+                                    </td>
+                                </tr>
+                                <tr v-if="!displayItems.data.length" key="empty">
+                                    <td colspan="7" class="text-center text-muted py-4">Tidak ada data</td>
+                                </tr>
+                            </TransitionGroup>
+                        </table>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <small class="text-muted">
+                            Menampilkan {{ displayItems.from ?? 0 }}–{{ displayItems.to ?? 0 }} dari {{ displayItems.total }}
+                        </small>
+                        <Pagination :links="displayItems.links" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <Modal :show="showModal" :title="(isEdit ? 'Edit ' : 'Tambah ') + 'Gudang'" size="modal-lg" @close="close">
+        <form @submit.prevent="submit">
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Kode</label>
+                        <input v-model="form.kode_gudang" class="form-control" :disabled="isEdit"
+                            :class="{ 'is-invalid': form.errors.kode_gudang }" placeholder="GDG-01">
+                        <small class="text-danger" v-if="form.errors.kode_gudang">{{ form.errors.kode_gudang }}</small>
+                    </div>
+                    <div class="col-md-8 mb-3">
+                        <label class="form-label">Nama</label>
+                        <input v-model="form.nama_gudang" class="form-control"
+                            :class="{ 'is-invalid': form.errors.nama_gudang }" placeholder="Gudang Pusat">
+                        <small class="text-danger" v-if="form.errors.nama_gudang">{{ form.errors.nama_gudang }}</small>
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label">Alamat</label>
+                        <textarea v-model="form.alamat" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="col-md-8 mb-3">
+                        <label class="form-label">Penanggung Jawab</label>
+                        <input v-model="form.penanggung_jawab" class="form-control">
+                    </div>
+                    <div class="col-md-4 mb-3 d-flex align-items-end">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" v-model="form.is_active" id="g-active">
+                            <label class="form-check-label" for="g-active">
+                                {{ form.is_active ? 'Aktif' : 'Nonaktif' }}
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" @click="close">Batal</button>
+                <button type="submit" class="btn btn-success">{{ isEdit ? 'Update' : 'Simpan' }}</button>
+            </div>
+        </form>
+    </Modal>
+</template>
+
+<style scoped>
+.is-invalid { border-color: #f46a6a !important; background-color: #fff5f5; }
+.row-fade-enter-active { transition: opacity 180ms ease; }
+.row-fade-enter-from   { opacity: 0; }
+.row-fade-leave-active { display: none; }
+</style>

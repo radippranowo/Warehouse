@@ -27,8 +27,10 @@ class StoreBarangRequest extends FormRequest
             'items.*.category_code'   => 'required',
             'items.*.merk_code'       => 'required',
             'items.*.group_code'      => 'required',
-            'items.*.stok'            => 'nullable|numeric',
-            'items.*.harga'           => 'nullable|numeric',
+            'items.*.satuan'          => 'nullable|string|max:20',
+            'items.*.harga_beli'      => 'nullable|numeric|min:0',
+            'items.*.harga_jual'      => 'nullable|numeric|min:0',
+            'items.*.min_stok'        => 'nullable|integer|min:0',
             'items.*.deskripsi'       => 'nullable|string',
         ];
     }

@@ -7,7 +7,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 defineOptions({ layout: AppLayout });
 
 const props = defineProps({
-    masters: { type: Object, default: () => ({ categories: [], merks: [], groups: [] }) },
+    masters: { type: Object, default: () => ({ categories: [], merks: [], groups: [], gudangs: [] }) },
 });
 
 function emptyRow() {
@@ -19,8 +19,10 @@ function emptyRow() {
         category_code: '',
         merk_code: '',
         group_code: '',
-        stok: 0,
-        harga: 0,
+        satuan: 'pcs',
+        harga_beli: 0,
+        harga_jual: 0,
+        min_stok: 0,
     };
 }
 
@@ -75,7 +77,7 @@ function submit() {
             preserveScroll: true,
             preserveState: (page) => Object.keys(page.props.errors ?? {}).length > 0,
             onSuccess: () => {
-                router.flushAll();    // invalidate cache /barang & master agar fresh
+                router.flushAll();
                 window.toast?.success(`${count} barang ditambah`);
             },
             onError:   () => window.toast?.error('Gagal Simpan'),
@@ -94,19 +96,25 @@ function submit() {
         </div>
 
         <div class="card-body">
+            <div class="alert alert-info py-2 small mb-3">
+                <i class="bx bx-info-circle me-1"></i>
+                Stok awal diinput melalui modul <strong>Penerimaan Barang / Mutasi Stok</strong> setelah master barang tersimpan.
+            </div>
+
             <form @submit.prevent="submit" autocomplete="off">
                 <div class="table-responsive">
                     <table class="table table-bordered align-middle">
                         <thead class="table-light">
                             <tr>
-                                <th style="width: 10%;">Kode</th>
-                                <th style="width: 15%;">Part Number</th>
-                                <th style="width: 15%;">Nama</th>
-                                <th style="width: 15%;">Kategori</th>
-                                <th style="width: 15%;">Merk</th>
-                                <th style="width: 15%;">Group</th>
-                                <th style="width: 8%;">Stok</th>
-                                <th style="width: 15%;">Harga</th>
+                                <th style="width: 9%;">Kode</th>
+                                <th style="width: 12%;">Part Number</th>
+                                <th style="width: 16%;">Nama</th>
+                                <th style="width: 12%;">Kategori</th>
+                                <th style="width: 11%;">Merk</th>
+                                <th style="width: 11%;">Group</th>
+                                <th style="width: 7%;">Satuan</th>
+                                <th style="width: 10%;">Harga Beli</th>
+                                <th style="width: 10%;">Harga Jual</th>
                                 <th style="width: 5%;" class="text-center">Aksi</th>
                             </tr>
                         </thead>
@@ -173,14 +181,18 @@ function submit() {
                                     </div>
                                 </td>
                                 <td class="position-relative">
-                                    <input type="number" v-model.number="row.stok"
+                                    <input type="text" v-model="row.satuan"
                                         class="form-control form-control-sm text-center">
                                 </td>
                                 <td class="position-relative">
-                                    <input type="number" v-model.number="row.harga"
+                                    <input type="number" v-model.number="row.harga_beli"
                                         class="form-control form-control-sm text-center">
                                 </td>
                                 <td class="position-relative">
+                                    <input type="number" v-model.number="row.harga_jual"
+                                        class="form-control form-control-sm text-center">
+                                </td>
+                                <td class="position-relative text-center">
                                     <button type="button" v-if="form.items.length > 1" @click="removeRow(idx)"
                                         class="btn btn-soft-danger btn-sm border-0 shadow-sm bx bx-trash font-size-16">
                                     </button>

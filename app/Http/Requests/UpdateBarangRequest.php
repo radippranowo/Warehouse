@@ -23,8 +23,11 @@ class UpdateBarangRequest extends FormRequest
             'category_code' => 'required',
             'merk_code'     => 'required',
             'group_code'    => 'required',
-            'stok'          => 'nullable|numeric',
-            'harga'         => 'nullable|numeric',
+            'satuan'        => 'nullable|string|max:20',
+            'harga_beli'    => 'nullable|numeric|min:0',
+            'harga_jual'    => 'nullable|numeric|min:0',
+            'min_stok'      => 'nullable|integer|min:0',
+            'is_active'     => 'nullable|boolean',
             'deskripsi'     => 'nullable|string',
         ];
     }

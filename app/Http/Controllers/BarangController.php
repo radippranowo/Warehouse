@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateBarangRequest;
 use App\Models\Barang;
 use App\Models\Category;
 use App\Models\Group;
+use App\Models\Gudang;
 use App\Models\Merk;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -23,8 +24,12 @@ class BarangController extends Controller
         $search = trim((string) $request->input('search', ''));
 
         $query = Barang::query()
-            ->select(['id', 'kode_barang', 'part_number', 'nama_barang',
-                'category_code', 'merk_code', 'group_code', 'stok', 'harga'])
+            ->select([
+                'id', 'kode_barang', 'part_number', 'nama_barang',
+                'category_code', 'merk_code', 'group_code',
+                'satuan', 'harga_beli', 'harga_jual', 'min_stok',
+            ])
+            ->withSum('stoks as stok_total', 'stok')
             ->with([
                 'kategori:kode_category,nama_category',
                 'merk:kode_merk,nama_merk',
@@ -33,14 +38,9 @@ class BarangController extends Controller
 
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
-                // Prefix LIKE → pakai B-tree index unique di kode_barang & part_number.
-                // (Wildcard di belakang saja bisa pakai index, di depan tidak bisa.)
                 $q->where('kode_barang', 'like', $search . '%')
                   ->orWhere('part_number', 'like', $search . '%');
 
-                // FULLTEXT index pada nama_barang → cepat untuk dataset besar.
-                // Minimum 3 karakter (innodb_ft_min_token_size default).
-                // Untuk search pendek, fallback substring LIKE.
                 if (mb_strlen($search) >= 3) {
                     $q->orWhereFullText('nama_barang', $search);
                 } else {
@@ -70,8 +70,6 @@ class BarangController extends Controller
         ]);
     }
 
-    // Cache dropdown options. toArray() dipakai supaya tidak unserialize
-    // sebagai __PHP_Incomplete_Class. Cache di-flush oleh booted() di model.
     private function mastersData(): array
     {
         return Cache::remember('barang.masters', now()->addHour(), function () {
@@ -79,6 +77,7 @@ class BarangController extends Controller
                 'categories' => Category::select('kode_category', 'nama_category')->orderBy('nama_category')->get()->toArray(),
                 'merks'      => Merk::select('kode_merk', 'nama_merk')->orderBy('nama_merk')->get()->toArray(),
                 'groups'     => Group::select('kode_group', 'nama_group')->orderBy('nama_group')->get()->toArray(),
+                'gudangs'    => Gudang::select('id', 'kode_gudang', 'nama_gudang')->where('is_active', true)->orderBy('nama_gudang')->get()->toArray(),
             ];
         });
     }
@@ -90,8 +89,11 @@ class BarangController extends Controller
         $now = now();
 
         foreach ($items as &$row) {
-            $row['stok']  = $row['stok']  ?? 0;
-            $row['harga'] = $row['harga'] ?? 0;
+            $row['satuan']     = $row['satuan']     ?? 'pcs';
+            $row['harga_beli'] = $row['harga_beli'] ?? 0;
+            $row['harga_jual'] = $row['harga_jual'] ?? 0;
+            $row['min_stok']   = $row['min_stok']   ?? 0;
+            $row['is_active']  = $row['is_active']  ?? true;
             $row['created_at'] = $now;
             $row['updated_at'] = $now;
         }
@@ -100,6 +102,32 @@ class BarangController extends Controller
         DB::transaction(fn () => Barang::insert($items));
 
         return redirect('/barang');
+    }
+
+    public function show(Barang $barang)
+    {
+        $barang->load([
+            'kategori:kode_category,nama_category',
+            'merk:kode_merk,nama_merk',
+            'group:kode_group,nama_group',
+            'stoks.gudang:id,kode_gudang,nama_gudang',
+        ]);
+
+        $mutasis = $barang->mutasiItems()
+            ->with([
+                'mutasi:id,nomor_mutasi,tanggal,tipe,gudang_id,gudang_tujuan_id,referensi,user_id',
+                'mutasi.gudang:id,nama_gudang',
+                'mutasi.gudangTujuan:id,nama_gudang',
+                'mutasi.user:id,name',
+            ])
+            ->latest('id')
+            ->limit(50)
+            ->get();
+
+        return Inertia::render('Barang/Show', [
+            'barang'  => $barang,
+            'mutasis' => $mutasis,
+        ]);
     }
 
     public function update(UpdateBarangRequest $request, Barang $barang)

@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Cache;
 class Category extends Model
 {
     protected $guarded = [];
-    protected $table = 'categorys';
+    protected $table = 'categories';
     protected $fillable = ['kode_category', 'nama_category'];
 
     protected static function booted(): void
