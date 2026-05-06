@@ -5,19 +5,19 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
 
 const props = defineProps({
-    rows:    { type: Object, required: true },
-    gudangs: { type: Array,  default: () => [] },
-    gudang:  { type: Object, default: null },
+    rows: { type: Object, required: true },
+    gudangs: { type: Array, default: () => [] },
+    gudang: { type: Object, default: null },
     summary: { type: Object, required: true },
     filters: { type: Object, required: true },
 });
 
 defineOptions({ layout: AppLayout });
 
-const search   = ref(props.filters.search ?? '');
-const perPage  = ref(props.filters.perPage ?? 25);
+const search = ref(props.filters.search ?? '');
+const perPage = ref(props.filters.perPage ?? 25);
 const gudangId = ref(props.filters.gudang_id ?? '');
-const lowOnly  = ref(props.filters.low_only ?? false);
+const lowOnly = ref(props.filters.low_only ?? false);
 let timer = null;
 
 function reload(extra = {}) {
@@ -39,9 +39,9 @@ function fmtRp(v) {
 }
 function statusOf(row) {
     const stok = Number(row.stok_gudang) || 0;
-    const min  = Number(row.min_stok_efektif) || 0;
-    if (stok === 0)   return { class: 'badge-soft-danger',  label: 'Kosong' };
-    if (stok <= min)  return { class: 'badge-soft-warning', label: 'Di bawah min' };
+    const min = Number(row.min_stok_efektif) || 0;
+    if (stok === 0) return { class: 'badge-soft-danger', label: 'Kosong' };
+    if (stok <= min) return { class: 'badge-soft-warning', label: 'Di bawah min' };
     return { class: 'badge-soft-success', label: 'Aman' };
 }
 </script>
@@ -146,7 +146,7 @@ function statusOf(row) {
                                     <th class="text-end">Stok</th>
                                     <th class="text-end">Min</th>
                                     <th>Status</th>
-                                    <th class="text-end">Nilai</th>
+                                    <th class="text-start">Nilai</th>
                                     <th></th>
                                 </tr>
                             </thead>
@@ -169,7 +169,14 @@ function statusOf(row) {
                                             {{ statusOf(row).label }}
                                         </span>
                                     </td>
-                                    <td class="text-end">{{ fmtRp(row.stok_gudang * row.harga_jual) }}</td>
+                                    <td>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Rp</span>
+                                            <span class="ms-2">
+                                                {{ (row.stok_gudang * row.harga_jual).toLocaleString('id-ID') }}
+                                            </span>
+                                        </div>
+                                    </td>
                                     <td>
                                         <Link :href="`/stok/${row.id}`"
                                             class="btn btn-sm btn-soft-primary border-0 shadow-sm bx bx-show font-size-16"
