@@ -1,8 +1,9 @@
 <script setup>
-import { ref, watch } from 'vue';
-import { router, Link } from '@inertiajs/vue3';
+import { ref, watch, computed } from 'vue';
+import { router, useForm, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
+import Modal from '@/Components/Modal.vue';
 
 const props = defineProps({
     rows: { type: Object, required: true },
@@ -44,6 +45,77 @@ function statusOf(row) {
     if (stok <= min) return { class: 'badge-soft-warning', label: 'Di bawah min' };
     return { class: 'badge-soft-success', label: 'Aman' };
 }
+
+// === IMPORT EXCEL (kontekstual ke gudang yg sedang difilter) ===
+const showImportModal = ref(false);
+const importForm = useForm({ gudang_id: '', file: null });
+const importResult = ref(null);
+
+const filteredGudang = computed(() =>
+    props.gudangs.find(g => g.id === Number(gudangId.value))
+);
+
+function openImport() {
+    if (!gudangId.value) {
+        window.toast?.error('Pilih gudang dulu di filter atas — import butuh tau gudang tujuan.');
+        return;
+    }
+    importForm.reset();
+    importForm.gudang_id = gudangId.value;
+    importForm.clearErrors();
+    importResult.value = null;
+    showImportModal.value = true;
+}
+function pickImportFile(e) {
+    importForm.file = e.target.files[0] ?? null;
+    importForm.clearErrors('file');
+}
+function submitImport() {
+    if (!importForm.file) { window.toast?.error('Pilih file Excel dulu.'); return; }
+    importForm.post('/stok/import', {
+        forceFormData: true,
+        preserveScroll: true,
+        // Server return back() ke /stok → row & summary auto-refresh dari response.
+        // Tidak perlu reload() manual.
+        onSuccess: (page) => {
+            const r = page.props?.flash?.import_result;
+            importResult.value = r ?? null;
+            const status = r?.status;
+            if (status === 'success') {
+                window.toast?.success(r.message);
+                showImportModal.value = false;
+                router.flushAll();
+            } else if (status === 'partial') {
+                window.toast?.info(r.message);
+                router.flushAll();
+            } else if (status === 'error') {
+                window.toast?.error(r.message);
+            }
+        },
+    });
+}
+
+// === RESET STOK (per gudang yg lagi difilter) ===
+const showClearModal = ref(false);
+const clearForm = useForm({ confirm: '', gudang_id: '' });
+
+function openClear() {
+    clearForm.reset();
+    clearForm.gudang_id = gudangId.value || '';
+    clearForm.clearErrors();
+    showClearModal.value = true;
+}
+function submitClear() {
+    clearForm.post('/stok/clear', {
+        preserveScroll: true,
+        onSuccess: (page) => {
+            window.toast?.success(page.props?.flash?.import_result?.message ?? 'Stok direset');
+            showClearModal.value = false;
+            router.flushAll();
+        },
+        onError: () => window.toast?.error('Reset gagal — cek konfirmasi'),
+    });
+}
 </script>
 
 <template>
@@ -56,7 +128,13 @@ function statusOf(row) {
                             STOK PER GUDANG
                             <small v-if="gudang" class="text-muted ms-2">— {{ gudang.nama_gudang }}</small>
                         </h5>
-                        <div v-if="gudangId" class="d-flex gap-2">
+                        <div v-if="gudangId" class="d-flex gap-2 flex-wrap">
+                            <button type="button" class="btn btn-info btn-rounded" @click="openImport">
+                                <i class="bx bx-upload me-1"></i>Import Stok
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-rounded" @click="openClear">
+                                <i class="bx bx-trash me-1"></i>Reset
+                            </button>
                             <a :href="`/stok?print=1&gudang_id=${gudangId}&search=${encodeURIComponent(search)}&low_only=${lowOnly ? 1 : 0}`"
                                 target="_blank"
                                 class="btn btn-outline-primary btn-rounded">
@@ -200,4 +278,81 @@ function statusOf(row) {
             </div>
         </div>
     </div>
+
+    <Modal :show="showImportModal" :title="`Import Stok ke ${filteredGudang?.nama_gudang ?? ''}`" size="modal-md" @close="showImportModal = false">
+        <div class="modal-body">
+            <div class="alert alert-info py-2 mb-3">
+                <i class="bx bx-info-circle"></i>
+                Stok di Excel akan <strong>ditambahkan</strong> ke stok existing di gudang
+                <strong>{{ filteredGudang?.nama_gudang }}</strong>.
+                Re-import file yg sama = stok akan dobel.
+            </div>
+
+            <div class="alert alert-light border py-2 mb-3" style="font-size: 12px;">
+                <strong>Format Excel</strong> (baris 1 = header):
+                <table class="table table-sm mb-0 mt-1">
+                    <tbody>
+                        <tr><td>A</td><td><code>kode_barang</code></td><td>Harus sudah ada di master</td></tr>
+                        <tr><td>B</td><td><code>stok</code></td><td>Angka ≥ 0</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">File Excel (.xlsx / .xls / .csv)</label>
+                <input type="file" accept=".xlsx,.xls,.csv" class="form-control"
+                    @change="pickImportFile"
+                    :class="{ 'is-invalid': importForm.errors.file }"
+                    :disabled="importForm.processing">
+                <div v-if="importForm.errors.file" class="invalid-feedback">
+                    {{ importForm.errors.file }}
+                </div>
+            </div>
+
+            <div v-if="importResult?.errors?.length" class="alert alert-warning py-2 mt-2">
+                <strong>Detail issue:</strong>
+                <div class="bg-white border rounded p-2 mt-1"
+                    style="max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 11px;">
+                    <div v-for="(err, i) in importResult.errors" :key="i" class="text-danger">
+                        {{ err }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-light" @click="showImportModal = false" :disabled="importForm.processing">Batal</button>
+            <button class="btn btn-success" :disabled="!importForm.file || importForm.processing" @click="submitImport">
+                <i class="bx bx-upload me-1"></i>
+                {{ importForm.processing ? 'Memproses...' : 'Mulai Import' }}
+            </button>
+        </div>
+    </Modal>
+
+    <Modal :show="showClearModal" title="Reset Stok" size="modal-md" @close="showClearModal = false">
+        <div class="modal-body">
+            <div class="alert alert-danger py-2 mb-3">
+                <i class="bx bx-error-circle"></i>
+                Aksi ini tidak bisa di-undo. Akan menghapus stok di:
+                <strong>{{ filteredGudang?.nama_gudang ?? 'SEMUA gudang' }}</strong>
+            </div>
+            <div class="mb-2">
+                <label class="form-label">
+                    Ketik <code class="text-danger">HAPUS</code> untuk konfirmasi
+                </label>
+                <input v-model="clearForm.confirm" type="text" class="form-control"
+                    :class="{ 'is-invalid': clearForm.errors.confirm }"
+                    placeholder="HAPUS" autocomplete="off">
+                <div v-if="clearForm.errors.confirm" class="invalid-feedback">
+                    {{ clearForm.errors.confirm }}
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-light" @click="showClearModal = false" :disabled="clearForm.processing">Batal</button>
+            <button class="btn btn-danger" :disabled="clearForm.confirm !== 'HAPUS' || clearForm.processing" @click="submitClear">
+                <i class="bx bx-trash me-1"></i>
+                {{ clearForm.processing ? 'Menghapus...' : 'Reset Sekarang' }}
+            </button>
+        </div>
+    </Modal>
 </template>

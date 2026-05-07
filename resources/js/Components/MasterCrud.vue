@@ -165,6 +165,80 @@ function submit() {
     }
 }
 
+// === SELECTION (bulk delete) =================================================
+const selected = ref(new Set());
+watch(() => props.items, () => { selected.value = new Set(); }, { deep: false });
+
+const selectedCount = computed(() => selected.value.size);
+const allSelected = computed(() =>
+    localData.value.length > 0 && localData.value.every(x => selected.value.has(x.id))
+);
+const someSelected = computed(() => selectedCount.value > 0 && !allSelected.value);
+
+function toggleOne(id) {
+    if (id == null) return;
+    const next = new Set(selected.value);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    selected.value = next;
+}
+function toggleAll(e) {
+    selected.value = e.target.checked
+        ? new Set(localData.value.map(x => x.id).filter(x => x != null))
+        : new Set();
+}
+
+function bulkDestroy() {
+    const ids = [...selected.value];
+    if (!ids.length) return;
+
+    const doDelete = () => {
+        const idSet      = new Set(ids);
+        const deletables = localData.value.filter(x => idSet.has(x.id) && (x.barangs_count ?? 0) === 0);
+        const blocked    = ids.length - deletables.length;
+
+        if (!deletables.length) {
+            selected.value = new Set();
+            window.toast?.error(`Semua ${props.title.toLowerCase()} yang dipilih masih digunakan barang.`);
+            return;
+        }
+
+        const snapshot   = [...localData.value];
+        const snapTotal  = localTotal.value;
+        const removeIds  = new Set(deletables.map(x => x.id));
+        const sendIds    = deletables.map(x => x.id);
+
+        localData.value  = localData.value.filter(x => !removeIds.has(x.id));
+        localTotal.value = Math.max(0, snapTotal - removeIds.size);
+        selected.value   = new Set();
+
+        window.toast?.success(
+            `${removeIds.size} ${props.title.toLowerCase()} dihapus`
+            + (blocked ? `, ${blocked} dilewati (masih digunakan)` : '')
+        );
+
+        router.delete(`${props.baseUrl}/bulk`, {
+            data: { ids: sendIds },
+            preserveScroll: true,
+            preserveState:  true,
+            only: [props.pageProp],
+            onError: () => {
+                localData.value  = snapshot;
+                localTotal.value = snapTotal;
+                window.toast?.error('Gagal menghapus');
+            },
+        });
+    };
+
+    if (window.confirmDialog) {
+        window.confirmDialog({
+            title: `Hapus ${ids.length} ${props.title.toLowerCase()}?`,
+            text:  'Item yang masih digunakan barang akan dilewati.',
+        }).then(ok => { if (ok) doDelete(); });
+    } else if (confirm(`Hapus ${ids.length} ${props.title.toLowerCase()}?`)) {
+        doDelete();
+    }
+}
+
 function destroy(item) {
     const nama  = item[props.fieldNama];
     const inUse = (item.barangs_count ?? 0) > 0;
@@ -177,11 +251,25 @@ function destroy(item) {
         }
 
         // OPTIMISTIC: hapus lokal dulu, server menyusul.
-        const snapshot  = [...localData.value];
-        const snapTotal = localTotal.value;
+        const snapshot    = [...localData.value];
+        const snapTotal   = localTotal.value;
+        const wasSelected = selected.value.has(item.id);
         localData.value  = localData.value.filter(x => x.id !== item.id);
         localTotal.value = Math.max(0, snapTotal - 1);
+        if (wasSelected) {
+            const next = new Set(selected.value);
+            next.delete(item.id);
+            selected.value = next;
+        }
         window.toast?.success(`${props.title} dihapus`);
+
+        const restoreSelection = () => {
+            if (wasSelected) {
+                const next = new Set(selected.value);
+                next.add(item.id);
+                selected.value = next;
+            }
+        };
 
         router.delete(`${props.baseUrl}/${item.id}`, {
             preserveScroll: true,
@@ -193,6 +281,7 @@ function destroy(item) {
                     // Server tolak (race condition: barangs ditambah setelah load).
                     localData.value  = snapshot;
                     localTotal.value = snapTotal;
+                    restoreSelection();
                     window.toast?.error(flashError);
                 } else {
                     // Master berubah → invalidate prefetch cache halaman lain
@@ -203,6 +292,7 @@ function destroy(item) {
             onError: () => {
                 localData.value  = snapshot;
                 localTotal.value = snapTotal;
+                restoreSelection();
                 window.toast?.error('Gagal menghapus');
             },
         });
@@ -226,7 +316,11 @@ function destroy(item) {
                 <div class="card-body border">
                     <div class="d-flex align-items-center">
                         <h5 class="mb-0 card-title flex-grow-1">{{ title.toUpperCase() }}</h5>
-                        <div class="flex-shrink-0">
+                        <div class="flex-shrink-0 d-flex gap-2">
+                            <button v-if="selectedCount > 0" type="button"
+                                class="btn btn-danger btn-rounded" @click="bulkDestroy">
+                                <i class="mdi mdi-trash-can-outline me-1"></i>Hapus ({{ selectedCount }})
+                            </button>
                             <button class="btn btn-success btn-rounded" @click="openCreate">
                                 <i class="mdi mdi-plus me-1"></i>Tambah {{ title }}
                             </button>
@@ -268,6 +362,12 @@ function destroy(item) {
                         <table class="table align-middle table-nowrap table-check">
                             <thead class="table-light">
                                 <tr>
+                                    <th style="width: 36px;">
+                                        <input type="checkbox" class="form-check-input"
+                                            :checked="allSelected"
+                                            :indeterminate.prop="someSelected"
+                                            @change="toggleAll">
+                                    </th>
                                     <th style="width: 50px;">No</th>
                                     <th>{{ labelKode }}</th>
                                     <th>{{ labelNama }}</th>
@@ -275,7 +375,14 @@ function destroy(item) {
                                 </tr>
                             </thead>
                             <TransitionGroup tag="tbody" :name="animateRows ? 'row-fade' : ''">
-                                <tr v-for="(item, i) in displayItems.data" :key="item[fieldKode]">
+                                <tr v-for="(item, i) in displayItems.data" :key="item[fieldKode]"
+                                    :class="{ 'table-active': item.id != null && selected.has(item.id) }">
+                                    <td>
+                                        <input type="checkbox" class="form-check-input"
+                                            :checked="item.id != null && selected.has(item.id)"
+                                            :disabled="item.id == null"
+                                            @change="toggleOne(item.id)">
+                                    </td>
                                     <td>{{ (displayItems.current_page - 1) * displayItems.per_page + i + 1 }}</td>
                                     <td>{{ item[fieldKode] }}</td>
                                     <td>{{ item[fieldNama] }}</td>
@@ -287,7 +394,7 @@ function destroy(item) {
                                     </td>
                                 </tr>
                                 <tr v-if="!displayItems.data.length" key="empty">
-                                    <td colspan="4" class="text-center text-muted py-4">Tidak ada data</td>
+                                    <td colspan="5" class="text-center text-muted py-4">Tidak ada data</td>
                                 </tr>
                             </TransitionGroup>
                         </table>

@@ -25,6 +25,7 @@ class StoreBarangRequest extends FormRequest
             'items.*.part_number'     => ['nullable', 'distinct'],
             'items.*.nama_barang'     => 'required|min:3',
             'items.*.category_code'   => 'required',
+            'items.*.sub_category_code' => 'nullable',
             'items.*.merk_code'       => 'required',
             'items.*.group_code'      => 'required',
             'items.*.satuan'          => 'nullable|string|max:20',

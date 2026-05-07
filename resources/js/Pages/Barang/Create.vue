@@ -7,7 +7,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 defineOptions({ layout: AppLayout });
 
 const props = defineProps({
-    masters: { type: Object, default: () => ({ categories: [], merks: [], groups: [], gudangs: [] }) },
+    masters: { type: Object, default: () => ({ categories: [], subCategories: [], merks: [], groups: [], gudangs: [] }) },
 });
 
 function emptyRow() {
@@ -17,6 +17,7 @@ function emptyRow() {
         part_number: '',
         nama_barang: '',
         category_code: '',
+        sub_category_code: '',
         merk_code: '',
         group_code: '',
         satuan: 'pcs',
@@ -106,15 +107,16 @@ function submit() {
                     <table class="table table-bordered align-middle">
                         <thead class="table-light">
                             <tr>
-                                <th style="width: 9%;">Kode</th>
-                                <th style="width: 12%;">Part Number</th>
-                                <th style="width: 16%;">Nama</th>
-                                <th style="width: 12%;">Kategori</th>
-                                <th style="width: 11%;">Merk</th>
-                                <th style="width: 11%;">Group</th>
-                                <th style="width: 7%;">Satuan</th>
-                                <th style="width: 10%;">Harga Beli</th>
-                                <th style="width: 10%;">Harga Jual</th>
+                                <th style="width: 8%;">Kode</th>
+                                <th style="width: 11%;">Part Number</th>
+                                <th style="width: 14%;">Nama</th>
+                                <th style="width: 10%;">Kategori</th>
+                                <th style="width: 10%;">Sub Kategori</th>
+                                <th style="width: 9%;">Merk</th>
+                                <th style="width: 9%;">Group</th>
+                                <th style="width: 6%;">Satuan</th>
+                                <th style="width: 9%;">Harga Beli</th>
+                                <th style="width: 9%;">Harga Jual</th>
                                 <th style="width: 5%;" class="text-center">Aksi</th>
                             </tr>
                         </thead>
@@ -154,6 +156,18 @@ function submit() {
                                     </select>
                                     <div v-if="rowError(idx, 'category_code')" class="invalid-feedback-absolute">
                                         {{ rowError(idx, 'category_code') }}
+                                    </div>
+                                </td>
+                                <td class="position-relative">
+                                    <select v-model="row.sub_category_code"
+                                        class="form-select form-select-sm"
+                                        :class="{ 'is-invalid': rowError(idx, 'sub_category_code') }">
+                                        <option value="">-</option>
+                                        <option v-for="s in props.masters.subCategories" :key="s.kode_sub_category"
+                                            :value="s.kode_sub_category">{{ s.nama_sub_category }}</option>
+                                    </select>
+                                    <div v-if="rowError(idx, 'sub_category_code')" class="invalid-feedback-absolute">
+                                        {{ rowError(idx, 'sub_category_code') }}
                                     </div>
                                 </td>
                                 <td class="position-relative">

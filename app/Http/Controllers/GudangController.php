@@ -18,10 +18,10 @@ class GudangController extends Controller
 
         $query = Gudang::query()
             ->select(['id', 'kode_gudang', 'nama_gudang', 'alamat', 'penanggung_jawab', 'is_active'])
-            ->withCount('stoks');
+            ->withCount(['stoks as stoks_with_qty' => fn ($q) => $q->where('stok', '>', 0)]);
 
         if ($search !== '') {
-            $like = '%' . $search . '%';
+            $like = $search . '%';
             $query->where(function ($q) use ($like) {
                 $q->where('nama_gudang', 'like', $like)
                   ->orWhere('kode_gudang', 'like', $like)
@@ -59,5 +59,29 @@ class GudangController extends Controller
         $gudang->delete();
         Cache::forget('barang.masters');
         return back()->with('success', 'Gudang berhasil dihapus');
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        $data = $request->validate([
+            'ids'   => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:gudangs,id'],
+        ]);
+
+        $rows = Gudang::whereIn('id', $data['ids'])
+            ->withCount(['stoks as stoks_with_qty' => fn ($q) => $q->where('stok', '>', 0)])
+            ->get();
+        $deletable    = $rows->where('stoks_with_qty', 0);
+        $blockedCount = $rows->count() - $deletable->count();
+
+        if ($deletable->isEmpty()) {
+            return back()->with('error', 'Semua gudang yang dipilih masih punya stok.');
+        }
+
+        $deleted = Gudang::whereIn('id', $deletable->pluck('id'))->delete();
+        Cache::forget('barang.masters');
+        $msg = "{$deleted} gudang dihapus"
+            . ($blockedCount ? ", {$blockedCount} dilewati (masih punya stok)" : '');
+        return back()->with('success', $msg);
     }
 }

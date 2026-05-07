@@ -13,10 +13,11 @@ const props = defineProps({
 });
 
 const masters = computed(() => ({
-    categories: props.masters.categories ?? [],
-    merks:      props.masters.merks      ?? [],
-    groups:     props.masters.groups     ?? [],
-    loading:    false,
+    categories:    props.masters.categories    ?? [],
+    subCategories: props.masters.subCategories ?? [],
+    merks:         props.masters.merks         ?? [],
+    groups:        props.masters.groups        ?? [],
+    loading:       false,
 }));
 
 defineOptions({ layout: AppLayout });
@@ -72,6 +73,7 @@ const editForm = useForm({
     part_number: '',
     nama_barang: '',
     category_code: '',
+    sub_category_code: '',
     merk_code: '',
     group_code: '',
     satuan: 'pcs',
@@ -89,6 +91,7 @@ function openEdit(item) {
         part_number: item.part_number ?? '',
         nama_barang: item.nama_barang ?? '',
         category_code: item.category_code ?? '',
+        sub_category_code: item.sub_category_code ?? '',
         merk_code: item.merk_code ?? '',
         group_code: item.group_code ?? '',
         satuan: item.satuan ?? 'pcs',
@@ -108,24 +111,27 @@ function submitEdit() {
     const idx = localData.value.findIndex(x => x.id === editForm.id);
     if (idx !== -1) {
         const cat = masters.value.categories.find(c => c.kode_category === editForm.category_code);
+        const sub = masters.value.subCategories.find(s => s.kode_sub_category === editForm.sub_category_code);
         const mrk = masters.value.merks.find(m => m.kode_merk === editForm.merk_code);
         const grp = masters.value.groups.find(g => g.kode_group === editForm.group_code);
         localData.value[idx] = {
             ...localData.value[idx],
-            kode_barang:   editForm.kode_barang,
-            part_number:   editForm.part_number,
-            nama_barang:   editForm.nama_barang,
-            category_code: editForm.category_code,
-            merk_code:     editForm.merk_code,
-            group_code:    editForm.group_code,
-            satuan:        editForm.satuan,
-            harga_beli:    editForm.harga_beli,
-            harga_jual:    editForm.harga_jual,
-            min_stok:      editForm.min_stok,
-            deskripsi:     editForm.deskripsi,
-            kategori: cat ? { kode_category: cat.kode_category, nama_category: cat.nama_category } : null,
-            merk:     mrk ? { kode_merk: mrk.kode_merk, nama_merk: mrk.nama_merk } : null,
-            group:    grp ? { kode_group: grp.kode_group, nama_group: grp.nama_group } : null,
+            kode_barang:       editForm.kode_barang,
+            part_number:       editForm.part_number,
+            nama_barang:       editForm.nama_barang,
+            category_code:     editForm.category_code,
+            sub_category_code: editForm.sub_category_code,
+            merk_code:         editForm.merk_code,
+            group_code:        editForm.group_code,
+            satuan:            editForm.satuan,
+            harga_beli:        editForm.harga_beli,
+            harga_jual:        editForm.harga_jual,
+            min_stok:          editForm.min_stok,
+            deskripsi:         editForm.deskripsi,
+            kategori:     cat ? { kode_category: cat.kode_category, nama_category: cat.nama_category } : null,
+            sub_kategori: sub ? { kode_sub_category: sub.kode_sub_category, nama_sub_category: sub.nama_sub_category } : null,
+            merk:        mrk ? { kode_merk: mrk.kode_merk, nama_merk: mrk.nama_merk } : null,
+            group:       grp ? { kode_group: grp.kode_group, nama_group: grp.nama_group } : null,
         };
     }
     showEditModal.value = false;
@@ -145,24 +151,137 @@ function submitEdit() {
 }
 
 // =========================================================================
+// SELECTION (bulk delete)
+// =========================================================================
+const selected = ref(new Set());
+
+watch(() => props.barangs, () => { selected.value = new Set(); }, { deep: false });
+
+const selectedCount = computed(() => selected.value.size);
+const allSelected = computed(() =>
+    localData.value.length > 0 && localData.value.every(x => selected.value.has(x.id))
+);
+const someSelected = computed(() =>
+    selectedCount.value > 0 && !allSelected.value
+);
+
+function toggleOne(id) {
+    const next = new Set(selected.value);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    selected.value = next;
+}
+function toggleAll(e) {
+    selected.value = e.target.checked
+        ? new Set(localData.value.map(x => x.id))
+        : new Set();
+}
+
+function bulkDestroy() {
+    const ids = [...selected.value];
+    if (!ids.length) return;
+
+    const doDelete = () => {
+        const idSet      = new Set(ids);
+        const deletables = localData.value.filter(x => idSet.has(x.id) && (x.stok_total ?? 0) === 0);
+        const blocked    = ids.length - deletables.length;
+
+        // Semua dipilih masih punya stok → instan error, gak hit server.
+        if (!deletables.length) {
+            selected.value = new Set();
+            window.toast?.error('Semua barang yang dipilih masih punya stok.');
+            return;
+        }
+
+        const snapshot   = [...localData.value];
+        const snapTotal  = localTotal.value;
+        const removeIds  = new Set(deletables.map(x => x.id));
+        const sendIds    = deletables.map(x => x.id);
+
+        localData.value  = localData.value.filter(x => !removeIds.has(x.id));
+        localTotal.value = Math.max(0, snapTotal - removeIds.size);
+        selected.value   = new Set();
+
+        window.toast?.success(
+            `${removeIds.size} barang dihapus`
+            + (blocked ? `, ${blocked} dilewati (masih ada stok)` : '')
+        );
+
+        router.delete('/barang/bulk', {
+            data: { ids: sendIds },
+            preserveScroll: true,
+            preserveState:  true,
+            only: ['barangs', 'flash'],
+            onError: () => {
+                localData.value  = snapshot;
+                localTotal.value = snapTotal;
+                window.toast?.error('Gagal menghapus');
+            },
+        });
+    };
+
+    if (window.confirmDialog) {
+        window.confirmDialog({
+            title: `Hapus ${ids.length} barang?`,
+            text:  'Barang yang masih punya stok / riwayat mutasi akan dilewati.',
+        }).then(ok => { if (ok) doDelete(); });
+    } else if (confirm(`Hapus ${ids.length} barang?`)) {
+        doDelete();
+    }
+}
+
+// =========================================================================
 // DELETE
 // =========================================================================
 function destroy(item) {
+    const hasStok = (item.stok_total ?? 0) > 0;
+
     const doDelete = () => {
+        // Guard setelah konfirmasi — sama pola dgn MasterCrud (Category/Merk/Group).
+        if (hasStok) {
+            window.toast?.error(`Barang '${item.nama_barang}' masih punya stok.`);
+            return;
+        }
+
         const snapshot  = [...localData.value];
         const snapTotal = localTotal.value;
+        const wasSelected = selected.value.has(item.id);
         localData.value  = localData.value.filter(x => x.id !== item.id);
         localTotal.value = Math.max(0, snapTotal - 1);
+        if (wasSelected) {
+            const next = new Set(selected.value);
+            next.delete(item.id);
+            selected.value = next;
+        }
         window.toast?.success('Barang dihapus');
 
         router.delete(`/barang/${item.id}`, {
             preserveScroll: true,
             preserveState:  true,
-            only: ['barangs'],
-            onSuccess: () => router.flushAll(),
+            only: ['barangs', 'flash'],
+            onSuccess: (page) => {
+                const flashError = page.props?.flash?.error;
+                if (flashError) {
+                    // Server tolak (mis. ada riwayat mutasi). Rollback diam-diam.
+                    localData.value  = snapshot;
+                    localTotal.value = snapTotal;
+                    if (wasSelected) {
+                        const next = new Set(selected.value);
+                        next.add(item.id);
+                        selected.value = next;
+                    }
+                    window.toast?.error(flashError);
+                } else {
+                    router.flushAll();
+                }
+            },
             onError: () => {
                 localData.value  = snapshot;
                 localTotal.value = snapTotal;
+                if (wasSelected) {
+                    const next = new Set(selected.value);
+                    next.add(item.id);
+                    selected.value = next;
+                }
                 window.toast?.error('Gagal menghapus');
             },
         });
@@ -191,7 +310,18 @@ function fmtRp(v) {
                 <div class="card-body border">
                     <div class="d-flex align-items-center">
                         <h5 class="mb-0 card-title flex-grow-1">BARANG</h5>
-                        <div class="flex-shrink-0">
+                        <div class="flex-shrink-0 d-flex gap-2">
+                            <button
+                                v-if="selectedCount > 0"
+                                type="button"
+                                class="btn btn-danger btn-rounded"
+                                @click="bulkDestroy"
+                            >
+                                <i class="mdi mdi-trash-can-outline me-1"></i>Hapus ({{ selectedCount }})
+                            </button>
+                            <Link href="/barang/import" prefetch class="btn btn-info btn-rounded">
+                                <i class="bx bx-upload me-1"></i>Import Excel
+                            </Link>
                             <Link href="/barang/create" prefetch class="btn btn-success btn-rounded">
                                 <i class="mdi mdi-plus me-1"></i>Tambah Barang
                             </Link>
@@ -242,26 +372,45 @@ function fmtRp(v) {
                         <table class="table align-middle table-nowrap table-check">
                             <thead class="table-light">
                                 <tr>
+                                    <th style="width: 36px;">
+                                        <input
+                                            type="checkbox"
+                                            class="form-check-input"
+                                            :checked="allSelected"
+                                            :indeterminate.prop="someSelected"
+                                            @change="toggleAll"
+                                        >
+                                    </th>
                                     <th style="width: 50px;">No</th>
                                     <th>Kode</th>
                                     <th>Part Number</th>
                                     <th>Nama</th>
                                     <th>Kategori</th>
+                                    <th>Sub Kategori</th>
                                     <th>Merk</th>
                                     <th>Group</th>
                                     <th>Satuan</th>
                                     <th>Total Stok</th>
-                                    <th>Harga Jual</th>
+                                    <th>Harga Beli</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
                             <TransitionGroup tag="tbody" :name="animateRows ? 'row-fade' : ''">
-                                <tr v-for="(item, i) in displayBarangs.data" :key="item.id">
+                                <tr v-for="(item, i) in displayBarangs.data" :key="item.id" :class="{ 'table-active': selected.has(item.id) }">
+                                    <td>
+                                        <input
+                                            type="checkbox"
+                                            class="form-check-input"
+                                            :checked="selected.has(item.id)"
+                                            @change="toggleOne(item.id)"
+                                        >
+                                    </td>
                                     <td>{{ (displayBarangs.current_page - 1) * displayBarangs.per_page + i + 1 }}</td>
                                     <td>{{ item.kode_barang }}</td>
                                     <td>{{ item.part_number }}</td>
                                     <td>{{ item.nama_barang }}</td>
                                     <td>{{ item.kategori?.nama_category }}</td>
+                                    <td>{{ item.sub_kategori?.nama_sub_category ?? '-' }}</td>
                                     <td>{{ item.merk?.nama_merk }}</td>
                                     <td>{{ item.group?.nama_group }}</td>
                                     <td>{{ item.satuan ?? '-' }}</td>
@@ -270,7 +419,7 @@ function fmtRp(v) {
                                             {{ item.stok_total ?? 0 }}
                                         </span>
                                     </td>
-                                    <td>{{ fmtRp(item.harga_jual) }}</td>
+                                    <td>{{ fmtRp(item.harga_beli) }}</td>
                                     <td>
                                         <Link :href="`/barang/${item.id}`"
                                             class="btn btn-sm btn-soft-primary border-0 shadow-sm bx bx-show font-size-16"
@@ -287,7 +436,7 @@ function fmtRp(v) {
                                     </td>
                                 </tr>
                                 <tr v-if="!displayBarangs.data.length" key="empty">
-                                    <td colspan="11" class="text-center text-muted py-4">Tidak ada data</td>
+                                    <td colspan="13" class="text-center text-muted py-4">Tidak ada data</td>
                                 </tr>
                             </TransitionGroup>
                         </table>
@@ -339,6 +488,20 @@ function fmtRp(v) {
                             :invalid="!!editForm.errors.category_code"
                         />
                         <small class="text-danger" v-if="editForm.errors.category_code">{{ editForm.errors.category_code }}</small>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Sub Kategori</label>
+                        <SearchSelect
+                            v-model="editForm.sub_category_code"
+                            :options="masters.subCategories"
+                            option-value="kode_sub_category"
+                            option-label="nama_sub_category"
+                            placeholder="Pilih Sub Kategori"
+                            search-placeholder="Cari sub kategori..."
+                            :loading="masters.loading"
+                            :invalid="!!editForm.errors.sub_category_code"
+                        />
+                        <small class="text-danger" v-if="editForm.errors.sub_category_code">{{ editForm.errors.sub_category_code }}</small>
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Merk</label>

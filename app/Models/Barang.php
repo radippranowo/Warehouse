@@ -12,6 +12,7 @@ class Barang extends Model
         'part_number',
         'nama_barang',
         'category_code',
+        'sub_category_code',
         'merk_code',
         'group_code',
         'satuan',
@@ -32,6 +33,11 @@ class Barang extends Model
     public function kategori()
     {
         return $this->belongsTo(Category::class, 'category_code', 'kode_category');
+    }
+
+    public function subKategori()
+    {
+        return $this->belongsTo(SubCategory::class, 'sub_category_code', 'kode_sub_category');
     }
 
     public function merk()

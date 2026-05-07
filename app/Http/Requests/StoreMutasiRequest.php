@@ -24,7 +24,12 @@ class StoreMutasiRequest extends FormRequest
 
             'items'               => ['required', 'array', 'min:1'],
             'items.*.barang_id'   => ['required', 'distinct', 'exists:barangs,id'],
-            'items.*.qty'         => ['required', 'integer', 'min:0'],
+            'items.*.qty'         => [
+                'required',
+                'integer',
+                // Adjust = qty bisa 0 (set stok jadi 0). Tipe lain harus > 0.
+                $this->input('tipe') === 'adjust' ? 'min:0' : 'min:1',
+            ],
             'items.*.harga_satuan'=> ['nullable', 'numeric', 'min:0'],
             'items.*.keterangan'  => ['nullable', 'string'],
         ];
@@ -39,6 +44,7 @@ class StoreMutasiRequest extends FormRequest
             'items.*.barang_id.required'   => 'Barang wajib',
             'items.*.barang_id.distinct'   => 'Barang duplikat di form',
             'items.*.qty.required'         => 'Qty wajib',
+            'items.*.qty.min'              => 'Qty harus lebih dari 0',
         ];
     }
 }

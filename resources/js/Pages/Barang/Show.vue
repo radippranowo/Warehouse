@@ -6,8 +6,9 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 defineOptions({ layout: AppLayout });
 
 const props = defineProps({
-    barang:  { type: Object, required: true },
-    mutasis: { type: Array,  default: () => [] },
+    barang:   { type: Object, required: true },
+    mutasis:  { type: Array,  default: () => [] },
+    back_url: { type: String, default: '/barang' },
 });
 
 const totalStok = computed(() =>
@@ -35,7 +36,7 @@ function fmtDate(v) {
     <div class="card shadow-sm mb-3">
         <div class="card-body border-bottom d-flex justify-content-between">
             <h5 class="mb-0">Detail Barang</h5>
-            <Link href="/barang" class="btn btn-primary btn-rounded mb-2">
+            <Link :href="back_url" class="btn btn-primary btn-rounded mb-2">
                 <i class="mdi mdi-arrow-left me-1"></i>Kembali
             </Link>
         </div>
@@ -45,6 +46,7 @@ function fmtDate(v) {
                 <div class="col-md-3"><small class="text-muted">Part Number</small><div>{{ barang.part_number || '-' }}</div></div>
                 <div class="col-md-6"><small class="text-muted">Nama</small><div>{{ barang.nama_barang }}</div></div>
                 <div class="col-md-3 mt-3"><small class="text-muted">Kategori</small><div>{{ barang.kategori?.nama_category }}</div></div>
+                <div class="col-md-3 mt-3"><small class="text-muted">Sub Kategori</small><div>{{ barang.sub_kategori?.nama_sub_category ?? '-' }}</div></div>
                 <div class="col-md-3 mt-3"><small class="text-muted">Merk</small><div>{{ barang.merk?.nama_merk }}</div></div>
                 <div class="col-md-3 mt-3"><small class="text-muted">Group</small><div>{{ barang.group?.nama_group }}</div></div>
                 <div class="col-md-3 mt-3"><small class="text-muted">Satuan</small><div>{{ barang.satuan }}</div></div>

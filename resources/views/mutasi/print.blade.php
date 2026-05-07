@@ -68,7 +68,7 @@
 
     <div class="header">
         <div class="company">
-            <h2>{{ config('app.name', 'LOGISTIK') }}</h2>
+            {{-- <h2>{{ config('app.name', 'LOGISTIK') }}</h2> --}}
             <small>Sistem Manajemen Stok &amp; Mutasi Gudang</small>
         </div>
         <div class="doc-title">

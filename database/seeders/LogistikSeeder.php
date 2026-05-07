@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Group;
 use App\Models\Gudang;
 use App\Models\Merk;
+use App\Models\SubCategory;
 use Illuminate\Database\Seeder;
 
 class LogistikSeeder extends Seeder
@@ -20,6 +21,14 @@ class LogistikSeeder extends Seeder
             ['kode_category' => 'CAT-03', 'nama_category' => 'Tools'],
         ];
         foreach ($categories as $c) Category::firstOrCreate(['kode_category' => $c['kode_category']], $c);
+
+        $subCategories = [
+            ['kode_sub_category' => 'SUB-01', 'nama_sub_category' => 'Filter'],
+            ['kode_sub_category' => 'SUB-02', 'nama_sub_category' => 'Oli Mesin'],
+            ['kode_sub_category' => 'SUB-03', 'nama_sub_category' => 'Oli Hidrolik'],
+            ['kode_sub_category' => 'SUB-04', 'nama_sub_category' => 'Kunci'],
+        ];
+        foreach ($subCategories as $sc) SubCategory::firstOrCreate(['kode_sub_category' => $sc['kode_sub_category']], $sc);
 
         $merks = [
             ['kode_merk' => 'MRK-01', 'nama_merk' => 'Bosch'],
@@ -43,11 +52,11 @@ class LogistikSeeder extends Seeder
         foreach ($gudangs as $gd) Gudang::firstOrCreate(['kode_gudang' => $gd['kode_gudang']], $gd + ['is_active' => true]);
 
         $barangs = [
-            ['kode_barang' => 'BRG-001', 'part_number' => 'FO-90915-YZZD2', 'nama_barang' => 'Filter Oli Mesin',     'category_code' => 'CAT-01', 'merk_code' => 'MRK-01', 'group_code' => 'GRP-01', 'satuan' => 'pcs',   'harga_beli' =>  50000, 'harga_jual' =>  75000, 'min_stok' => 20],
-            ['kode_barang' => 'BRG-002', 'part_number' => 'FU-23390-30340', 'nama_barang' => 'Filter Solar',         'category_code' => 'CAT-01', 'merk_code' => 'MRK-01', 'group_code' => 'GRP-01', 'satuan' => 'pcs',   'harga_beli' =>  85000, 'harga_jual' => 120000, 'min_stok' => 15],
-            ['kode_barang' => 'BRG-003', 'part_number' => null,             'nama_barang' => 'Oli Mesin Rimula 15W-40','category_code' => 'CAT-02','merk_code' => 'MRK-02', 'group_code' => 'GRP-01', 'satuan' => 'liter', 'harga_beli' =>  45000, 'harga_jual' =>  65000, 'min_stok' => 50],
-            ['kode_barang' => 'BRG-004', 'part_number' => null,             'nama_barang' => 'Hydraulic Oil Tellus 46','category_code' => 'CAT-02','merk_code' => 'MRK-02', 'group_code' => 'GRP-02', 'satuan' => 'liter', 'harga_beli' =>  55000, 'harga_jual' =>  80000, 'min_stok' => 30],
-            ['kode_barang' => 'BRG-005', 'part_number' => 'STN-94-248',     'nama_barang' => 'Kunci Pas 10mm',        'category_code' => 'CAT-03','merk_code' => 'MRK-03', 'group_code' => 'GRP-03', 'satuan' => 'pcs',   'harga_beli' =>  35000, 'harga_jual' =>  50000, 'min_stok' => 5],
+            ['kode_barang' => 'BRG-001', 'part_number' => 'FO-90915-YZZD2', 'nama_barang' => 'Filter Oli Mesin',     'category_code' => 'CAT-01', 'sub_category_code' => 'SUB-01', 'merk_code' => 'MRK-01', 'group_code' => 'GRP-01', 'satuan' => 'pcs',   'harga_beli' =>  50000, 'harga_jual' =>  75000, 'min_stok' => 20],
+            ['kode_barang' => 'BRG-002', 'part_number' => 'FU-23390-30340', 'nama_barang' => 'Filter Solar',         'category_code' => 'CAT-01', 'sub_category_code' => 'SUB-01', 'merk_code' => 'MRK-01', 'group_code' => 'GRP-01', 'satuan' => 'pcs',   'harga_beli' =>  85000, 'harga_jual' => 120000, 'min_stok' => 15],
+            ['kode_barang' => 'BRG-003', 'part_number' => null,             'nama_barang' => 'Oli Mesin Rimula 15W-40','category_code' => 'CAT-02','sub_category_code' => 'SUB-02', 'merk_code' => 'MRK-02', 'group_code' => 'GRP-01', 'satuan' => 'liter', 'harga_beli' =>  45000, 'harga_jual' =>  65000, 'min_stok' => 50],
+            ['kode_barang' => 'BRG-004', 'part_number' => null,             'nama_barang' => 'Hydraulic Oil Tellus 46','category_code' => 'CAT-02','sub_category_code' => 'SUB-03', 'merk_code' => 'MRK-02', 'group_code' => 'GRP-02', 'satuan' => 'liter', 'harga_beli' =>  55000, 'harga_jual' =>  80000, 'min_stok' => 30],
+            ['kode_barang' => 'BRG-005', 'part_number' => 'STN-94-248',     'nama_barang' => 'Kunci Pas 10mm',        'category_code' => 'CAT-03','sub_category_code' => 'SUB-04', 'merk_code' => 'MRK-03', 'group_code' => 'GRP-03', 'satuan' => 'pcs',   'harga_beli' =>  35000, 'harga_jual' =>  50000, 'min_stok' => 5],
         ];
         foreach ($barangs as $b) Barang::firstOrCreate(['kode_barang' => $b['kode_barang']], $b + ['is_active' => true]);
 

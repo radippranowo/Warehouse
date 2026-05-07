@@ -2,6 +2,7 @@
 import { Link, usePage, router } from '@inertiajs/vue3';
 import { onMounted, onBeforeUnmount, nextTick, computed, watch } from 'vue';
 import ToastHost from '@/Components/ToastHost.vue';
+import SyncIndicator from '@/Components/SyncIndicator.vue';
 
 const page = usePage();
 
@@ -159,7 +160,7 @@ onBeforeUnmount(() => {
                 <div id="sidebar-menu">
                     <ul class="metismenu list-unstyled" id="side-menu">
                         <li>
-                            <Link href="/dashboard" prefetch cache-for="5m" class="waves-effect">
+                            <Link href="/dashboard" prefetch cache-for="15m" class="waves-effect">
                                 <i class="bx bx-home-alt"></i><span>Dashboard</span>
                             </Link>
                         </li>
@@ -168,11 +169,13 @@ onBeforeUnmount(() => {
                                 <i class="bx bx-package"></i><span>Data Master</span>
                             </a>
                             <ul class="sub-menu" aria-expanded="false">
-                                <li><Link href="/barang"   prefetch cache-for="5m">Barang</Link></li>
-                                <li><Link href="/category" prefetch cache-for="5m">Kategori</Link></li>
-                                <li><Link href="/merk"     prefetch cache-for="5m">Merk</Link></li>
-                                <li><Link href="/group"    prefetch cache-for="5m">Group</Link></li>
-                                <li><Link href="/gudang"   prefetch cache-for="5m">Gudang</Link></li>
+                                <li><Link href="/barang"   prefetch cache-for="15m">Barang</Link></li>
+                                <li><Link href="/category" prefetch cache-for="15m">Kategori</Link></li>
+                                <li><Link href="/sub-category" prefetch cache-for="15m">Sub Kategori</Link></li>
+                                <li><Link href="/merk"     prefetch cache-for="15m">Merk</Link></li>
+                                <li><Link href="/group"    prefetch cache-for="15m">Group</Link></li>
+                                <li><Link href="/gudang"   prefetch cache-for="15m">Gudang</Link></li>
+                                
                             </ul>
                         </li>
                         <li>
@@ -185,14 +188,9 @@ onBeforeUnmount(() => {
                                 <i class="bx bx-transfer"></i><span>Transaksi</span>
                             </a>
                             <ul class="sub-menu" aria-expanded="false">
-                                <li><Link href="/mutasi"        prefetch cache-for="5m">Riwayat Mutasi</Link></li>
+                                <li><Link href="/mutasi"        prefetch cache-for="15m">Riwayat Mutasi</Link></li>
                               
                             </ul>
-                        </li>
-                        <li>
-                            <Link href="/pr" prefetch cache-for="5m" class="waves-effect">
-                                <i class="bx bx-receipt"></i><span>Pre-Order</span>
-                            </Link>
                         </li>
                     </ul>
                 </div>
@@ -217,9 +215,10 @@ onBeforeUnmount(() => {
     </form>
 
     <ToastHost />
+    <SyncIndicator />
 </template>
 
-<style>
+<!-- <style>
 .page-fade-wrap {
     will-change: opacity;
 }
@@ -233,4 +232,4 @@ onBeforeUnmount(() => {
 .page-fade-leave-to {
     opacity: 0;
 }
-</style>
+</style> -->

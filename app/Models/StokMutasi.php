@@ -18,13 +18,23 @@ class StokMutasi extends Model
         'user_id',
         'total_qty',
         'total_value',
+        'status',
+        'approved_by',
+        'approved_at',
+        'rejection_reason',
     ];
 
     protected $casts = [
         'tanggal'     => 'datetime',
         'total_qty'   => 'integer',
         'total_value' => 'decimal:2',
+        'approved_at' => 'datetime',
     ];
+
+    public function approver()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
 
     public function items()
     {
