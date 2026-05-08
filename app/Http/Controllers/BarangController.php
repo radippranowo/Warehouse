@@ -25,6 +25,7 @@ class BarangController extends Controller
         // Cache-buster `?_=...` setelah import/reset → paksa drop master cache.
         if ($request->has('_')) {
             Cache::forget('barang.masters');
+            Cache::forget('mutasi.masters');
         }
 
         $perPage = (int) $request->input('perPage', 25);
@@ -112,6 +113,7 @@ class BarangController extends Controller
         unset($row);
 
         DB::transaction(fn () => Barang::insert($items));
+        Cache::forget('mutasi.masters');
 
         return redirect('/barang');
     }
@@ -151,6 +153,7 @@ class BarangController extends Controller
     public function update(UpdateBarangRequest $request, Barang $barang)
     {
         $barang->update($request->validated());
+        Cache::forget('mutasi.masters');
 
         return back();
     }
@@ -165,6 +168,7 @@ class BarangController extends Controller
         }
 
         $barang->delete();
+        Cache::forget('mutasi.masters');
 
         return back()->with('success', 'Barang dihapus');
     }
@@ -189,6 +193,7 @@ class BarangController extends Controller
         }
 
         $deleted = DB::transaction(fn () => Barang::whereIn('id', $deletable->pluck('id'))->delete());
+        Cache::forget('mutasi.masters');
 
         $msg = "{$deleted} barang dihapus"
             . ($blockedCount ? ", {$blockedCount} dilewati (masih punya stok / riwayat mutasi)" : '');
@@ -273,6 +278,7 @@ class BarangController extends Controller
         });
 
         Cache::forget('barang.masters');
+        Cache::forget('mutasi.masters');
         DB::table('gudangs')->pluck('id')->each(fn ($id) => Cache::forget("stok.summary.{$id}"));
 
         $labels = [
@@ -346,6 +352,7 @@ class BarangController extends Controller
         }
 
         Cache::forget('barang.masters');
+        Cache::forget('mutasi.masters');
 
         $hasIssue = count($importer->errors) > 0 || $importer->skipped > 0;
         return back()->with('import_result', [

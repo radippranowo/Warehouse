@@ -106,16 +106,22 @@ class MutasiController extends Controller
 
     public function create()
     {
-        return Inertia::render('Mutasi/Create', [
-            'barangs' => Barang::select('id', 'kode_barang', 'nama_barang', 'satuan')
-                ->where('is_active', true)
-                ->orderBy('nama_barang')
-                ->get(),
-            'gudangs' => Gudang::select('id', 'kode_gudang', 'nama_gudang')
-                ->where('is_active', true)
-                ->orderBy('nama_gudang')
-                ->get(),
-        ]);
+        $masters = Cache::remember('mutasi.masters', now()->addHour(), function () {
+            return [
+                'barangs' => Barang::select('id', 'kode_barang', 'nama_barang', 'satuan')
+                    ->where('is_active', true)
+                    ->orderBy('nama_barang')
+                    ->get()
+                    ->toArray(),
+                'gudangs' => Gudang::select('id', 'kode_gudang', 'nama_gudang')
+                    ->where('is_active', true)
+                    ->orderBy('nama_gudang')
+                    ->get()
+                    ->toArray(),
+            ];
+        });
+
+        return Inertia::render('Mutasi/Create', $masters);
     }
 
     public function store(StoreMutasiRequest $request)

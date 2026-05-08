@@ -29,10 +29,8 @@ class GudangController extends Controller
             });
         }
 
-        $gudangs = $query->latest('id')->paginate($perPage)->withQueryString();
-
         return Inertia::render('Gudang/Index', [
-            'gudangs' => $gudangs,
+            'gudangs' => $query->latest('id')->paginate($perPage)->withQueryString(),
             'filters' => ['search' => $search, 'perPage' => $perPage],
         ]);
     }
@@ -41,6 +39,7 @@ class GudangController extends Controller
     {
         Gudang::create($request->validated());
         Cache::forget('barang.masters');
+        Cache::forget('mutasi.masters');
         return back()->with('success', 'Gudang berhasil ditambah');
     }
 
@@ -48,6 +47,7 @@ class GudangController extends Controller
     {
         $gudang->update($request->validated());
         Cache::forget('barang.masters');
+        Cache::forget('mutasi.masters');
         return back()->with('success', 'Gudang berhasil diubah');
     }
 
@@ -58,6 +58,7 @@ class GudangController extends Controller
         }
         $gudang->delete();
         Cache::forget('barang.masters');
+        Cache::forget('mutasi.masters');
         return back()->with('success', 'Gudang berhasil dihapus');
     }
 
@@ -80,6 +81,7 @@ class GudangController extends Controller
 
         $deleted = Gudang::whereIn('id', $deletable->pluck('id'))->delete();
         Cache::forget('barang.masters');
+        Cache::forget('mutasi.masters');
         $msg = "{$deleted} gudang dihapus"
             . ($blockedCount ? ", {$blockedCount} dilewati (masih punya stok)" : '');
         return back()->with('success', $msg);

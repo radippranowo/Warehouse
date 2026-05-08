@@ -11,6 +11,7 @@ const props = defineProps({
     invalid:    { type: Boolean, default: false },
     disabled:   { type: Boolean, default: false },
     loading:    { type: Boolean, default: false },
+    maxResults: { type: Number,  default: 100 },
 });
 const emit = defineEmits(['update:modelValue']);
 
@@ -27,7 +28,9 @@ const selectedLabel = computed(() =>
     selected.value ? selected.value[props.optionLabel] : ''
 );
 
-const filtered = computed(() => {
+// Cap render size — kalau options ribuan, render semua <li> bikin dropdown lag.
+// User wajib ketik buat narrow down kalau di atas batas.
+const filteredAll = computed(() => {
     const q = search.value.trim().toLowerCase();
     if (!q) return props.options;
     return props.options.filter(o =>
@@ -35,6 +38,8 @@ const filtered = computed(() => {
         String(o[props.optionValue]).toLowerCase().includes(q)
     );
 });
+const filtered = computed(() => filteredAll.value.slice(0, props.maxResults));
+const overflowCount = computed(() => Math.max(0, filteredAll.value.length - filtered.value.length));
 
 function calcMenuPosition() {
     if (!root.value) return;
@@ -133,6 +138,9 @@ watch(() => props.modelValue, () => { /* no-op, biar tidak menutup saat user pil
                         {{ o[optionLabel] }}
                     </li>
                     <li v-if="!filtered.length" class="text-center text-muted py-3 small">Tidak ada hasil</li>
+                    <li v-else-if="overflowCount > 0" class="text-center text-muted py-2 small ss-overflow">
+                        +{{ overflowCount.toLocaleString('id-ID') }} lainnya — ketik untuk mempersempit
+                    </li>
                 </ul>
             </div>
         </Teleport>
@@ -199,4 +207,5 @@ watch(() => props.modelValue, () => { /* no-op, biar tidak menutup saat user pil
 }
 .ss-item:hover { background: #f5f7fb; }
 .ss-item.active { background: #556ee6; color: #fff; }
+.ss-overflow { border-top: 1px solid #eef0f3; background: #fafbfc; font-style: italic; }
 </style>

@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useForm, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import SearchSelect from '@/Components/SearchSelect.vue';
 
 defineOptions({ layout: AppLayout });
 
@@ -63,6 +64,15 @@ function fmtRp(v) {
 function barangLabel(b) {
     return `${b.kode_barang} — ${b.nama_barang}`;
 }
+
+const barangOptions = computed(() =>
+    props.barangs.map(b => ({ id: b.id, label: barangLabel(b), satuan: b.satuan }))
+);
+const barangById = computed(() => {
+    const m = new Map();
+    for (const b of props.barangs) m.set(b.id, b);
+    return m;
+});
 
 function submit() {
     form.transform((data) => ({
@@ -161,13 +171,14 @@ function submit() {
                             <tr v-for="(row, idx) in form.items" :key="row._key">
                                 <td>{{ idx + 1 }}</td>
                                 <td class="position-relative">
-                                    <select v-model="row.barang_id" class="form-select form-select-sm"
-                                        :class="{ 'is-invalid': rowError(idx, 'barang_id') }">
-                                        <option value="">Pilih barang</option>
-                                        <option v-for="b in barangs" :key="b.id" :value="b.id">
-                                            {{ barangLabel(b) }}
-                                        </option>
-                                    </select>
+                                    <SearchSelect
+                                        v-model="row.barang_id"
+                                        :options="barangOptions"
+                                        option-value="id"
+                                        option-label="label"
+                                        placeholder="Pilih barang"
+                                        search-placeholder="Cari kode / nama..."
+                                        :invalid="!!rowError(idx, 'barang_id')" />
                                     <small v-if="rowError(idx, 'barang_id')" class="text-danger">
                                         {{ rowError(idx, 'barang_id') }}
                                     </small>
@@ -181,7 +192,7 @@ function submit() {
                                     </small>
                                 </td>
                                 <td class="text-muted">
-                                    {{ barangs.find(b => b.id === row.barang_id)?.satuan || '-' }}
+                                    {{ barangById.get(row.barang_id)?.satuan || '-' }}
                                 </td>
                                 <td v-if="!isAdjust">
                                     <input type="number" v-model.number="row.harga_satuan" min="0"

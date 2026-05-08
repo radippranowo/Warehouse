@@ -33,10 +33,8 @@ class CategoryController extends Controller
             });
         }
 
-        $categories = $query->latest('id')->paginate($perPage)->withQueryString();
-
         return Inertia::render('Category/Index', [
-            'categories' => $categories,
+            'categories' => $query->latest('id')->paginate($perPage)->withQueryString(),
             'filters'    => ['search' => $search, 'perPage' => $perPage],
         ]);
     }

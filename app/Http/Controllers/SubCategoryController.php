@@ -33,10 +33,8 @@ class SubCategoryController extends Controller
             });
         }
 
-        $subCategories = $query->latest('id')->paginate($perPage)->withQueryString();
-
         return Inertia::render('SubCategory/Index', [
-            'subCategories' => $subCategories,
+            'subCategories' => $query->latest('id')->paginate($perPage)->withQueryString(),
             'filters'       => ['search' => $search, 'perPage' => $perPage],
         ]);
     }

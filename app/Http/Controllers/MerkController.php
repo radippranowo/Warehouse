@@ -33,10 +33,8 @@ class MerkController extends Controller
             });
         }
 
-        $merks = $query->latest('id')->paginate($perPage)->withQueryString();
-
         return Inertia::render('Merk/Index', [
-            'merks'   => $merks,
+            'merks'   => $query->latest('id')->paginate($perPage)->withQueryString(),
             'filters' => ['search' => $search, 'perPage' => $perPage],
         ]);
     }

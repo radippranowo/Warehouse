@@ -3,6 +3,7 @@ import { watch } from 'vue';
 import { useForm, Link, router } from '@inertiajs/vue3';
 import axios from 'axios';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import SearchSelect from '@/Components/SearchSelect.vue';
 
 defineOptions({ layout: AppLayout });
 
@@ -147,49 +148,53 @@ function submit() {
                                     </div>
                                 </td>
                                 <td class="position-relative">
-                                    <select v-model="row.category_code"
-                                        class="form-select form-select-sm"
-                                        :class="{ 'is-invalid': rowError(idx, 'category_code') }">
-                                        <option value="">Pilih</option>
-                                        <option v-for="cat in props.masters.categories" :key="cat.kode_category"
-                                            :value="cat.kode_category">{{ cat.nama_category }}</option>
-                                    </select>
+                                    <SearchSelect
+                                        v-model="row.category_code"
+                                        :options="props.masters.categories"
+                                        option-value="kode_category"
+                                        option-label="nama_category"
+                                        placeholder="Pilih"
+                                        search-placeholder="Cari kategori..."
+                                        :invalid="!!rowError(idx, 'category_code')" />
                                     <div v-if="rowError(idx, 'category_code')" class="invalid-feedback-absolute">
                                         {{ rowError(idx, 'category_code') }}
                                     </div>
                                 </td>
                                 <td class="position-relative">
-                                    <select v-model="row.sub_category_code"
-                                        class="form-select form-select-sm"
-                                        :class="{ 'is-invalid': rowError(idx, 'sub_category_code') }">
-                                        <option value="">-</option>
-                                        <option v-for="s in props.masters.subCategories" :key="s.kode_sub_category"
-                                            :value="s.kode_sub_category">{{ s.nama_sub_category }}</option>
-                                    </select>
+                                    <SearchSelect
+                                        v-model="row.sub_category_code"
+                                        :options="props.masters.subCategories"
+                                        option-value="kode_sub_category"
+                                        option-label="nama_sub_category"
+                                        placeholder="-"
+                                        search-placeholder="Cari sub kategori..."
+                                        :invalid="!!rowError(idx, 'sub_category_code')" />
                                     <div v-if="rowError(idx, 'sub_category_code')" class="invalid-feedback-absolute">
                                         {{ rowError(idx, 'sub_category_code') }}
                                     </div>
                                 </td>
                                 <td class="position-relative">
-                                    <select v-model="row.merk_code"
-                                        class="form-select form-select-sm"
-                                        :class="{ 'is-invalid': rowError(idx, 'merk_code') }">
-                                        <option value="">Pilih</option>
-                                        <option v-for="m in props.masters.merks" :key="m.kode_merk"
-                                            :value="m.kode_merk">{{ m.nama_merk }}</option>
-                                    </select>
+                                    <SearchSelect
+                                        v-model="row.merk_code"
+                                        :options="props.masters.merks"
+                                        option-value="kode_merk"
+                                        option-label="nama_merk"
+                                        placeholder="Pilih"
+                                        search-placeholder="Cari merk..."
+                                        :invalid="!!rowError(idx, 'merk_code')" />
                                     <div v-if="rowError(idx, 'merk_code')" class="invalid-feedback-absolute">
                                         {{ rowError(idx, 'merk_code') }}
                                     </div>
                                 </td>
                                 <td class="position-relative">
-                                    <select v-model="row.group_code"
-                                        class="form-select form-select-sm"
-                                        :class="{ 'is-invalid': rowError(idx, 'group_code') }">
-                                        <option value="">Pilih</option>
-                                        <option v-for="g in props.masters.groups" :key="g.kode_group"
-                                            :value="g.kode_group">{{ g.nama_group }}</option>
-                                    </select>
+                                    <SearchSelect
+                                        v-model="row.group_code"
+                                        :options="props.masters.groups"
+                                        option-value="kode_group"
+                                        option-label="nama_group"
+                                        placeholder="Pilih"
+                                        search-placeholder="Cari group..."
+                                        :invalid="!!rowError(idx, 'group_code')" />
                                     <div v-if="rowError(idx, 'group_code')" class="invalid-feedback-absolute">
                                         {{ rowError(idx, 'group_code') }}
                                     </div>

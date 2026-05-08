@@ -179,7 +179,7 @@ onBeforeUnmount(() => {
                             </ul>
                         </li>
                         <li>
-                            <Link href="/stok" prefetch cache-for="5m" class="waves-effect">
+                            <Link href="/stok" prefetch cache-for="15m" class="waves-effect">
                                 <i class="bx bx-buildings"></i><span>Stok Gudang</span>
                             </Link>
                         </li>
@@ -188,7 +188,7 @@ onBeforeUnmount(() => {
                                 <i class="bx bx-transfer"></i><span>Transaksi</span>
                             </a>
                             <ul class="sub-menu" aria-expanded="false">
-                                <li><Link href="/mutasi"        prefetch cache-for="15m">Riwayat Mutasi</Link></li>
+                                <li><Link href="/mutasi" prefetch cache-for="15m">Riwayat Mutasi</Link></li>
                               
                             </ul>
                         </li>
