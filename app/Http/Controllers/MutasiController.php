@@ -8,6 +8,7 @@ use App\Models\BarangStok;
 use App\Models\Gudang;
 use App\Models\StokMutasi;
 use App\Models\StokMutasiItem;
+use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -87,10 +88,16 @@ class MutasiController extends Controller
         $mutasi->load([
             'gudang:id,kode_gudang,nama_gudang',
             'gudangTujuan:id,kode_gudang,nama_gudang',
+            'supplier:id,kode_supplier,nama_supplier',
             'user:id,name',
+            'approver:id,name',
+            'canceller:id,name',
             'items.barang:id,kode_barang,nama_barang,satuan',
         ]);
-        return response()->json($mutasi);
+        
+        return Inertia::render('Transaksi/Detail', [
+            'mutasi' => $mutasi,
+        ]);
     }
 
     public function print(StokMutasi $mutasi)
@@ -98,10 +105,66 @@ class MutasiController extends Controller
         $mutasi->load([
             'gudang:id,kode_gudang,nama_gudang,alamat',
             'gudangTujuan:id,kode_gudang,nama_gudang,alamat',
+            'supplier:id,kode_supplier,nama_supplier',
             'user:id,name',
+            'approver:id,name',
+            'canceller:id,name',
             'items.barang:id,kode_barang,nama_barang,satuan',
         ]);
         return view('mutasi.print', ['mutasi' => $mutasi]);
+    }
+
+    public function printList(Request $request)
+    {
+        $tipe = $request->input('tipe', 'in'); // in, out, transfer, adjust
+        $gudangId = $request->input('gudang_id', '');
+        $dateFrom = $request->input('date_from', '');
+        $dateTo = $request->input('date_to', '');
+        $search = trim((string) $request->input('search', ''));
+
+        $query = StokMutasi::query()
+            ->with([
+                'gudang:id,kode_gudang,nama_gudang',
+                'gudangTujuan:id,kode_gudang,nama_gudang',
+                'supplier:id,kode_supplier,nama_supplier',
+                'user:id,name',
+                'items.barang:id,kode_barang,nama_barang,satuan',
+            ])
+            ->where('tipe', $tipe)
+            ->whereNull('cancelled_at')
+            ->orderBy('tanggal', 'desc')
+            ->orderBy('created_at', 'desc');
+
+        if ($gudangId) {
+            $query->where('gudang_id', $gudangId);
+        }
+
+        if ($dateFrom) {
+            $query->whereDate('tanggal', '>=', $dateFrom);
+        }
+
+        if ($dateTo) {
+            $query->whereDate('tanggal', '<=', $dateTo);
+        }
+
+        if ($search !== '') {
+            $prefix = $search . '%';
+            $query->where(function ($q) use ($search, $prefix) {
+                $q->where('nomor_mutasi', 'like', $prefix)
+                  ->orWhere('referensi', 'like', $prefix);
+            });
+        }
+
+        $mutasis = $query->get();
+        $gudang = $gudangId ? Gudang::find($gudangId) : null;
+
+        return view('mutasi.print-list', [
+            'mutasis' => $mutasis,
+            'tipe' => $tipe,
+            'gudang' => $gudang,
+            'dateFrom' => $dateFrom,
+            'dateTo' => $dateTo,
+        ]);
     }
 
     public function create()
@@ -303,6 +366,367 @@ class MutasiController extends Controller
         Cache::forget("stok.summary.{$mutasi->gudang_id}");
 
         return back()->with('success', "Transfer {$mutasi->nomor_mutasi} ditolak — stok dikembalikan ke gudang asal.");
+    }
+
+    public function destroy(Request $request, StokMutasi $mutasi)
+    {
+        // Cek apakah sudah dibatalkan
+        if ($mutasi->cancelled_at) {
+            return back()->with('error', 'Transaksi sudah dibatalkan sebelumnya');
+        }
+
+        $reason = trim((string) $request->input('cancellation_reason', ''));
+        if ($reason === '') {
+            $reason = 'Dibatalkan oleh user';
+        }
+
+        DB::transaction(function () use ($mutasi, $request, $reason) {
+            // Lock mutasi
+            $locked = StokMutasi::whereKey($mutasi->id)->lockForUpdate()->first();
+
+            // Rollback stok berdasarkan tipe mutasi
+            foreach ($locked->items as $item) {
+                $barangId = $item->barang_id;
+                
+                if ($locked->tipe === 'in') {
+                    // Pemasukan: kurangi stok
+                    $stok = BarangStok::lockForUpdate()
+                        ->where('barang_id', $barangId)
+                        ->where('gudang_id', $locked->gudang_id)
+                        ->first();
+                    if ($stok) {
+                        $stok->decrement('stok', $item->qty);
+                    }
+                } elseif ($locked->tipe === 'out') {
+                    // Pengeluaran: kembalikan stok
+                    $stok = BarangStok::lockForUpdate()
+                        ->firstOrCreate(
+                            ['barang_id' => $barangId, 'gudang_id' => $locked->gudang_id],
+                            ['stok' => 0]
+                        );
+                    $stok->increment('stok', $item->qty);
+                } elseif ($locked->tipe === 'transfer') {
+                    // Transfer: kembalikan ke gudang asal jika sudah approved
+                    if ($locked->status === 'approved') {
+                        // Kurangi dari gudang tujuan
+                        $stokTujuan = BarangStok::lockForUpdate()
+                            ->where('barang_id', $barangId)
+                            ->where('gudang_id', $locked->gudang_tujuan_id)
+                            ->first();
+                        if ($stokTujuan) {
+                            $stokTujuan->decrement('stok', $item->qty);
+                        }
+                    }
+                    // Kembalikan ke gudang asal
+                    $stokAsal = BarangStok::lockForUpdate()
+                        ->firstOrCreate(
+                            ['barang_id' => $barangId, 'gudang_id' => $locked->gudang_id],
+                            ['stok' => 0]
+                        );
+                    $stokAsal->increment('stok', $item->qty);
+                } elseif ($locked->tipe === 'adjust') {
+                    // Penyesuaian: kembalikan ke stok sebelumnya
+                    $stok = BarangStok::lockForUpdate()
+                        ->where('barang_id', $barangId)
+                        ->where('gudang_id', $locked->gudang_id)
+                        ->first();
+                    if ($stok && $item->stok_sebelum !== null) {
+                        $stok->update(['stok' => $item->stok_sebelum]);
+                    }
+                }
+            }
+
+            // Tandai sebagai dibatalkan (soft delete)
+            $locked->update([
+                'cancelled_at' => now(),
+                'cancelled_by' => $request->user()?->id,
+                'cancellation_reason' => $reason,
+            ]);
+        });
+
+        // Clear cache
+        Cache::forget("stok.summary.{$mutasi->gudang_id}");
+        if ($mutasi->gudang_tujuan_id) {
+            Cache::forget("stok.summary.{$mutasi->gudang_tujuan_id}");
+        }
+
+        return back()->with('success', 'Transaksi berhasil dibatalkan dan stok telah disesuaikan. Data tetap tersimpan untuk audit.');
+    }
+
+    // Pengeluaran
+    public function pengeluaran()
+    {
+        $masters = Cache::remember('mutasi.masters', now()->addHour(), function () {
+            return [
+                'barangs' => Barang::select('id', 'kode_barang', 'nama_barang', 'satuan')
+                    ->where('is_active', true)
+                    ->orderBy('nama_barang')
+                    ->get()
+                    ->toArray(),
+                'gudangs' => Gudang::select('id', 'kode_gudang', 'nama_gudang')
+                    ->where('is_active', true)
+                    ->orderBy('nama_gudang')
+                    ->get()
+                    ->toArray(),
+            ];
+        });
+
+        return Inertia::render('Transaksi/BarangKeluar', $masters);
+    }
+
+    // Pemasukan
+    public function pemasukan()
+    {
+        // Clear cache untuk memastikan data fresh
+        Cache::forget('mutasi.masters');
+        
+        $masters = Cache::remember('mutasi.masters', now()->addHour(), function () {
+            return [
+                'barangs' => Barang::select('id', 'kode_barang', 'nama_barang', 'satuan')
+                    ->where('is_active', true)
+                    ->orderBy('nama_barang')
+                    ->get()
+                    ->toArray(),
+                'gudangs' => Gudang::select('id', 'kode_gudang', 'nama_gudang')
+                    ->where('is_active', true)
+                    ->orderBy('nama_gudang')
+                    ->get()
+                    ->toArray(),
+                'suppliers' => Supplier::select('id', 'kode_supplier', 'nama_supplier', 'kontak', 'telepon')
+                    ->where('is_active', true)
+                    ->orderBy('nama_supplier')
+                    ->get()
+                    ->toArray(),
+            ];
+        });
+
+        return Inertia::render('Transaksi/BarangMasuk', $masters);
+    }
+
+    // Transfer
+    public function transfer()
+    {
+        $masters = Cache::remember('mutasi.masters', now()->addHour(), function () {
+            return [
+                'barangs' => Barang::select('id', 'kode_barang', 'nama_barang', 'satuan')
+                    ->where('is_active', true)
+                    ->orderBy('nama_barang')
+                    ->get()
+                    ->toArray(),
+                'gudangs' => Gudang::select('id', 'kode_gudang', 'nama_gudang')
+                    ->where('is_active', true)
+                    ->orderBy('nama_gudang')
+                    ->get()
+                    ->toArray(),
+            ];
+        });
+
+        return Inertia::render('Transaksi/Transfer', $masters);
+    }
+
+    // Penyesuaian
+    public function penyesuaian()
+    {
+        $masters = Cache::remember('mutasi.masters', now()->addHour(), function () {
+            return [
+                'barangs' => Barang::select('id', 'kode_barang', 'nama_barang', 'satuan')
+                    ->where('is_active', true)
+                    ->orderBy('nama_barang')
+                    ->get()
+                    ->toArray(),
+                'gudangs' => Gudang::select('id', 'kode_gudang', 'nama_gudang')
+                    ->where('is_active', true)
+                    ->orderBy('nama_gudang')
+                    ->get()
+                    ->toArray(),
+            ];
+        });
+
+        return Inertia::render('Transaksi/Penyesuaian', $masters);
+    }
+
+    // Riwayat - Semua (termasuk yang dibatalkan untuk audit)
+    public function riwayatSemua(Request $request)
+    {
+        $perPage = (int) $request->input('perPage', 25);
+        $perPage = in_array($perPage, [10, 25, 50, 100]) ? $perPage : 25;
+        $search  = trim((string) $request->input('search', ''));
+        $gudang  = $request->input('gudang_id', '');
+        $status  = $request->input('status', '');
+        $dateFrom = $request->input('date_from', '');
+        $dateTo   = $request->input('date_to', '');
+        $tipe    = $request->input('tipe', '');
+
+        $query = StokMutasi::query()
+            ->with([
+                'gudang:id,kode_gudang,nama_gudang',
+                'gudangTujuan:id,kode_gudang,nama_gudang',
+                'supplier:id,kode_supplier,nama_supplier',
+                'user:id,name',
+                'approver:id,name',
+                'canceller:id,name', // Tambahkan relasi canceller
+            ])
+            ->withCount('items');
+        // TIDAK filter cancelled_at - tampilkan semua untuk audit
+
+        // Filter tipe
+        if (in_array($tipe, ['in', 'out', 'transfer', 'adjust'], true)) {
+            $query->where('tipe', $tipe);
+        }
+
+        // Filter status
+        if (in_array($status, ['pending', 'approved', 'rejected'], true)) {
+            $query->where('status', $status);
+        }
+
+        // Filter gudang
+        if ($gudang) {
+            $query->where(function ($q) use ($gudang) {
+                $q->where('gudang_id', $gudang)->orWhere('gudang_tujuan_id', $gudang);
+            });
+        }
+
+        // Filter tanggal
+        if ($dateFrom) {
+            $query->whereDate('tanggal', '>=', $dateFrom);
+        }
+        if ($dateTo) {
+            $query->whereDate('tanggal', '<=', $dateTo);
+        }
+
+        // Search
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nomor_mutasi', 'like', "%{$search}%")
+                  ->orWhere('keterangan', 'like', "%{$search}%");
+            });
+        }
+
+        $mutasis = $query->orderBy('tanggal', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage)
+            ->withQueryString();
+
+        $gudangs = Gudang::select('id', 'kode_gudang', 'nama_gudang')
+            ->where('is_active', true)
+            ->orderBy('nama_gudang')
+            ->get();
+
+        return Inertia::render('Riwayat/Semua', [
+            'mutasis' => $mutasis,
+            'gudangs' => $gudangs,
+            'filters' => [
+                'search'    => $search,
+                'gudang_id' => $gudang,
+                'status'    => $status,
+                'tipe'      => $tipe,
+                'date_from' => $dateFrom,
+                'date_to'   => $dateTo,
+                'perPage'   => $perPage,
+            ],
+        ]);
+    }
+
+    // Riwayat - Pemasukan
+    public function riwayatPemasukan(Request $request)
+    {
+        return $this->riwayatBase($request, 'in', 'Riwayat/Pemasukan');
+    }
+
+    // Riwayat - Pengeluaran
+    public function riwayatPengeluaran(Request $request)
+    {
+        return $this->riwayatBase($request, 'out', 'Riwayat/Pengeluaran');
+    }
+
+    // Riwayat - Transfer
+    public function riwayatTransfer(Request $request)
+    {
+        return $this->riwayatBase($request, 'transfer', 'Riwayat/Transfer');
+    }
+
+    // Riwayat - Penyesuaian
+    public function riwayatPenyesuaian(Request $request)
+    {
+        return $this->riwayatBase($request, 'adjust', 'Riwayat/Penyesuaian');
+    }
+
+    private function riwayatBase(Request $request, ?string $tipe, string $view)
+    {
+        $perPage = (int) $request->input('perPage', 25);
+        $perPage = in_array($perPage, [10, 25, 50, 100]) ? $perPage : 25;
+        $search  = trim((string) $request->input('search', ''));
+        $gudang  = $request->input('gudang_id', '');
+        $status  = $request->input('status', '');
+        $dateFrom = $request->input('date_from', '');
+        $dateTo   = $request->input('date_to', '');
+
+        $query = StokMutasi::query()
+            ->with([
+                'gudang:id,kode_gudang,nama_gudang',
+                'gudangTujuan:id,kode_gudang,nama_gudang',
+                'supplier:id,kode_supplier,nama_supplier',
+                'user:id,name',
+                'approver:id,name',
+            ])
+            ->withCount('items')
+            ->whereNull('cancelled_at'); // Filter transaksi yang tidak dibatalkan
+
+        // Filter tipe
+        if ($tipe) {
+            $query->where('tipe', $tipe);
+        }
+
+        // Filter status
+        if (in_array($status, ['pending', 'approved', 'rejected'], true)) {
+            $query->where('status', $status);
+        }
+
+        // Filter gudang
+        if ($gudang) {
+            $query->where(function ($q) use ($gudang) {
+                $q->where('gudang_id', $gudang)->orWhere('gudang_tujuan_id', $gudang);
+            });
+        }
+
+        // Filter tanggal
+        if ($dateFrom) {
+            $query->whereDate('tanggal', '>=', $dateFrom);
+        }
+        if ($dateTo) {
+            $query->whereDate('tanggal', '<=', $dateTo);
+        }
+
+        // Search
+        if ($search !== '') {
+            $prefix = $search . '%';
+            $query->where(function ($q) use ($search, $prefix) {
+                $q->where('nomor_mutasi', 'like', $prefix)
+                  ->orWhere('referensi', 'like', $prefix)
+                  ->orWhereHas('supplier', function ($qq) use ($search, $prefix) {
+                      $qq->where('nama_supplier', 'like', '%' . $search . '%')
+                         ->orWhere('kode_supplier', 'like', $prefix);
+                  });
+            });
+        }
+
+        $mutasis = $query->latest('tanggal')->latest('id')->paginate($perPage)->withQueryString();
+
+        return Inertia::render($view, [
+            'mutasis' => $mutasis,
+            'filters' => [
+                'search'    => $search,
+                'perPage'   => $perPage,
+                'gudang_id' => $gudang,
+                'status'    => $status,
+                'date_from' => $dateFrom,
+                'date_to'   => $dateTo,
+            ],
+            'gudangs' => fn () => Gudang::select('id', 'kode_gudang', 'nama_gudang')
+                ->where('is_active', true)
+                ->orderBy('nama_gudang')
+                ->get(),
+        ]);
     }
 
     private function generateNomor(): string

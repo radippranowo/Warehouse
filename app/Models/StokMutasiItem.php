@@ -24,6 +24,12 @@ class StokMutasiItem extends Model
         'stok_sesudah' => 'integer',
     ];
 
+    // Accessor untuk subtotal (computed)
+    public function getSubtotalAttribute()
+    {
+        return $this->qty * $this->harga_satuan;
+    }
+
     public function mutasi()
     {
         return $this->belongsTo(StokMutasi::class, 'stok_mutasi_id');

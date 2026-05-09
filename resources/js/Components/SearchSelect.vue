@@ -158,6 +158,7 @@ watch(() => props.modelValue, () => { /* no-op, biar tidak menutup saat user pil
     text-align: left;
     cursor: pointer;
     padding-right: .5rem;
+    background-image: none !important; /* Hilangkan tanda seru Bootstrap */
 }
 .ss-btn:disabled { cursor: not-allowed; background-color: #eff2f7; }
 

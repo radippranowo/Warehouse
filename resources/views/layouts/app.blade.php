@@ -4,9 +4,9 @@
 <head>
     <base href="{{ url('/') }}/">
     <meta charset="utf-8" />
-    <title>Logistik</title>
+    <title>Warehouse</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta content="Logistik Admin" name="description" />
+    <meta content="Warehouse Admin" name="description" />
     <meta content="Apex-inspired" name="author" />
 
     <link rel="shortcut icon" href="{{ asset('assets/images/favicon.ico') }}">
@@ -16,15 +16,15 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-    <!-- Existing libs (kept for page-level compatibility) -->
-    <link href="{{ asset('assets/libs/bootstrap-touchspin/jquery.bootstrap-touchspin.min.css') }}" rel="stylesheet" type="text/css" />
-    <link href="{{ asset('assets/libs/select2/css/select2.min.css') }}" rel="stylesheet" type="text/css" />
+    <!-- CSS -->
     <link href="{{ asset('assets/css/bootstrap.min.css') }}" id="bootstrap-style" rel="stylesheet" type="text/css" />
     <link href="{{ asset('assets/css/icons.min.css') }}" rel="stylesheet" type="text/css" />
     <link href="{{ asset('assets/css/app.min.css') }}" id="app-style" rel="stylesheet" type="text/css" />
+
+    <!-- SweetAlert2 (defer, non-blocking) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
+
+    @stack('styles')
 
     @livewireStyles
 
@@ -161,12 +161,10 @@
                     <ul class="metismenu list-unstyled" id="side-menu">
                         <li>
                             <a href="{{ route('dashboard.index') }}" wire:navigate.hover class="waves-effect">
-                                <i class="bx bx-home-circle"></i>
+                                <i class="bx bx-home-alt"></i>
                                 <span>Dashboard</span>
                             </a>
                         </li>
-
-                        <li class="menu-title" key="t-menu">Apps &amp; Pages</li>
 
                         <li>
                             <a href="javascript: void(0);" class="has-arrow waves-effect">
@@ -176,9 +174,18 @@
                             <ul class="sub-menu" aria-expanded="false">
                                 <li><a href="{{ route('barang.index') }}" wire:navigate.hover>Barang</a></li>
                                 <li><a href="{{ route('category.index') }}" wire:navigate.hover>Kategori</a></li>
+                                <li><a href="{{ route('sub-category.index') }}" wire:navigate.hover>Sub Kategori</a></li>
                                 <li><a href="{{ route('merk.index') }}" wire:navigate.hover>Merk</a></li>
                                 <li><a href="{{ route('group.index') }}" wire:navigate.hover>Group</a></li>
+                                <li><a href="{{ route('gudang.index') }}" wire:navigate.hover>Gudang</a></li>
                             </ul>
+                        </li>
+
+                        <li>
+                            <a href="{{ route('stok.index') }}" wire:navigate.hover class="waves-effect">
+                                <i class="bx bx-buildings"></i>
+                                <span>Stok Gudang</span>
+                            </a>
                         </li>
 
                         <li>
@@ -187,16 +194,8 @@
                                 <span>Transaksi</span>
                             </a>
                             <ul class="sub-menu" aria-expanded="false">
-                                <li><a href="{{ route('barangmasuk.index') }}" wire:navigate.hover>Barang Masuk</a></li>
-                                <li><a href="{{ route('barangkeluar.index') }}" wire:navigate.hover>Barang Keluar</a></li>
+                                <li><a href="{{ route('mutasi.index') }}" wire:navigate.hover>Riwayat Mutasi</a></li>
                             </ul>
-                        </li>
-
-                        <li>
-                            <a href="{{ route('pr.index') }}" wire:navigate.hover class="waves-effect">
-                                <i class="bx bx-receipt"></i>
-                                <span>Pre-Order</span>
-                            </a>
                         </li>
                     </ul>
                 </div>
@@ -226,16 +225,15 @@
         }
     </script>
 
-    <!-- JAVASCRIPT -->
+    <!-- JAVASCRIPT (essentials only) -->
     <script src="{{ asset('assets/libs/jquery/jquery.min.js') }}"></script>
     <script src="{{ asset('assets/libs/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ asset('assets/libs/metismenu/metisMenu.min.js') }}"></script>
     <script src="{{ asset('assets/libs/simplebar/simplebar.min.js') }}"></script>
     <script src="{{ asset('assets/libs/node-waves/waves.min.js') }}"></script>
     <script src="{{ asset('assets/js/app.js') }}"></script>
-    <script src="{{ asset('assets/libs/select2/js/select2.min.js') }}"></script>
-    <script src="{{ asset('assets/libs/jquery.repeater/jquery.repeater.min.js') }}"></script>
-    <script src="{{ asset('assets/js/pages/form-repeater.int.js') }}"></script>
+
+    @stack('scripts')
 
     <script data-navigate-once>
         // Sidebar toggle (works through wire:navigate)

@@ -336,11 +336,14 @@ function fmtRp(v) {
                                 <div class="search-box">
                                     <div class="position-relative">
                                         <input
+                                            id="search_barang"
+                                            name="search"
                                             v-model="search"
                                             type="text"
                                             class="form-control btn-rounded"
                                             placeholder="Cari kode / nama / part number..."
                                             style="padding-left: 40px;"
+                                            aria-label="Cari barang"
                                         >
                                         <i class="bx bx-search-alt search-icon" style="left: 13px;"></i>
                                     </div>
@@ -459,18 +462,18 @@ function fmtRp(v) {
             <div class="modal-body">
                 <div class="row">
                     <div class="col-md-4 mb-3">
-                        <label class="form-label">Kode</label>
-                        <input v-model="editForm.kode_barang" class="form-control" disabled>
+                        <label for="kode_barang_edit" class="form-label">Kode</label>
+                        <input id="kode_barang_edit" name="kode_barang" v-model="editForm.kode_barang" class="form-control" disabled>
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label class="form-label">Part Number</label>
-                        <input v-model="editForm.part_number" class="form-control"
+                        <label for="part_number_edit" class="form-label">Part Number</label>
+                        <input id="part_number_edit" name="part_number" v-model="editForm.part_number" class="form-control"
                             :class="{ 'is-invalid': editForm.errors.part_number }">
                         <small class="text-danger" v-if="editForm.errors.part_number">{{ editForm.errors.part_number }}</small>
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label class="form-label">Nama</label>
-                        <input v-model="editForm.nama_barang" class="form-control"
+                        <label for="nama_barang_edit" class="form-label">Nama</label>
+                        <input id="nama_barang_edit" name="nama_barang" v-model="editForm.nama_barang" class="form-control"
                             :class="{ 'is-invalid': editForm.errors.nama_barang }">
                         <small class="text-danger" v-if="editForm.errors.nama_barang">{{ editForm.errors.nama_barang }}</small>
                     </div>
@@ -533,24 +536,24 @@ function fmtRp(v) {
                     </div>
 
                     <div class="col-md-3 mb-3">
-                        <label class="form-label">Satuan</label>
-                        <input v-model="editForm.satuan" class="form-control">
+                        <label for="satuan_edit" class="form-label">Satuan</label>
+                        <input id="satuan_edit" name="satuan" v-model="editForm.satuan" class="form-control">
                     </div>
                     <div class="col-md-3 mb-3">
-                        <label class="form-label">Harga Beli</label>
-                        <input v-model="editForm.harga_beli" type="number" class="form-control">
+                        <label for="harga_beli_edit" class="form-label">Harga Beli</label>
+                        <input id="harga_beli_edit" name="harga_beli" v-model="editForm.harga_beli" type="number" class="form-control">
                     </div>
                     <div class="col-md-3 mb-3">
-                        <label class="form-label">Harga Jual</label>
-                        <input v-model="editForm.harga_jual" type="number" class="form-control">
+                        <label for="harga_jual_edit" class="form-label">Harga Jual</label>
+                        <input id="harga_jual_edit" name="harga_jual" v-model="editForm.harga_jual" type="number" class="form-control">
                     </div>
                     <div class="col-md-3 mb-3">
-                        <label class="form-label">Min Stok</label>
-                        <input v-model="editForm.min_stok" type="number" class="form-control">
+                        <label for="min_stok_edit" class="form-label">Min Stok</label>
+                        <input id="min_stok_edit" name="min_stok" v-model="editForm.min_stok" type="number" class="form-control">
                     </div>
                     <div class="col-md-12 mb-3">
-                        <label class="form-label">Deskripsi</label>
-                        <textarea v-model="editForm.deskripsi" class="form-control" rows="2"></textarea>
+                        <label for="deskripsi_edit" class="form-label">Deskripsi</label>
+                        <textarea id="deskripsi_edit" name="deskripsi" v-model="editForm.deskripsi" class="form-control" rows="2"></textarea>
                     </div>
                 </div>
             </div>

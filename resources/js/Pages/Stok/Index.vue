@@ -188,11 +188,11 @@ function submitClear() {
                     <!-- Filters -->
                     <div class="row g-2 mb-3 align-items-center">
                         <div class="col-md-4">
-                            <input v-model="search" type="text" class="form-control btn-rounded"
-                                placeholder="Cari kode / part / nama...">
+                            <input id="search_stok" name="search" v-model="search" type="text" class="form-control btn-rounded"
+                                placeholder="Cari kode / part / nama..." aria-label="Cari stok barang">
                         </div>
                         <div class="col-md-3">
-                            <select v-model="gudangId" class="form-select">
+                            <select id="gudang_filter_stok" name="gudang_id" v-model="gudangId" class="form-select" aria-label="Filter gudang">
                                 <option v-for="g in gudangs" :key="g.id" :value="g.id">
                                     {{ g.nama_gudang }} ({{ g.kode_gudang }})
                                 </option>
