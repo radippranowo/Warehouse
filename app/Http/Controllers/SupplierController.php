@@ -11,7 +11,12 @@ class SupplierController extends Controller
 {
     private function flushMasters(): void
     {
+        Cache::forget('barang.masters');
         Cache::forget('mutasi.masters');
+        Cache::forget('mutasi.masters.pemasukan');
+        Cache::forget('mutasi.masters.pengeluaran');
+        Cache::forget('mutasi.masters.transfer');
+        Cache::forget('mutasi.masters.penyesuaian');
     }
 
     public function index(Request $request)

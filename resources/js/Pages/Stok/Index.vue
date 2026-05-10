@@ -186,33 +186,36 @@ function submitClear() {
                     </div>
 
                     <!-- Filters -->
-                    <div class="row g-2 mb-3 align-items-center">
-                        <div class="col-md-4">
-                            <input id="search_stok" name="search" v-model="search" type="text" class="form-control btn-rounded"
-                                placeholder="Cari kode / part / nama..." aria-label="Cari stok barang">
+                    <div class="row g-2 mb-3">
+                        <div class="col-lg-3 col-md-4">
+                            <label class="form-label mb-1 small fw-medium">Pencarian</label>
+                            <div class="search-box">
+                                <div class="position-relative">
+                                    <input id="search_stok" name="search" v-model="search" type="text" class="form-control"
+                                        placeholder="Cari kode / part / nama..." style="padding-left: 36px; height: 38px;" aria-label="Cari stok barang">
+                                    <i class="bx bx-search-alt search-icon" style="left: 12px; font-size: 18px;"></i>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-3">
-                            <select id="gudang_filter_stok" name="gudang_id" v-model="gudangId" class="form-select" aria-label="Filter gudang">
+                        <div class="col-lg-2 col-md-3">
+                            <label class="form-label mb-1 small fw-medium">Gudang</label>
+                            <select id="gudang_filter_stok" name="gudang_id" v-model="gudangId" class="form-select" style="height: 38px;" aria-label="Filter gudang">
                                 <option v-for="g in gudangs" :key="g.id" :value="g.id">
                                     {{ g.nama_gudang }} ({{ g.kode_gudang }})
                                 </option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-lg-auto col-md-auto ms-auto">
+                            <label class="form-label mb-1 small fw-medium d-block">&nbsp;</label>
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" v-model="lowOnly" id="lowOnly">
                                 <label class="form-check-label" for="lowOnly">Hanya stok ≤ min</label>
                             </div>
                         </div>
-                        <div class="col-md-2">
-                            <select :value="perPage" class="form-select" @change="changePerPage(+$event.target.value)">
-                                <option v-for="n in [10, 25, 50, 100]" :key="n" :value="n">{{ n }} / hal</option>
-                            </select>
-                        </div>
                     </div>
 
                     <div class="table-responsive">
-                        <table class="table align-middle table-nowrap">
+                        <table class="table align-middle table-nowrap table-hover">
                             <thead class="table-light">
                                 <tr>
                                     <th>Kode</th>
@@ -269,9 +272,14 @@ function submitClear() {
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center mt-3">
-                        <small class="text-muted">
-                            Menampilkan {{ rows.from ?? 0 }}–{{ rows.to ?? 0 }} dari {{ rows.total }}
-                        </small>
+                        <div class="d-flex align-items-center gap-2">
+                            <small class="text-muted">
+                                Menampilkan {{ rows.from ?? 0 }}–{{ rows.to ?? 0 }} dari {{ rows.total }}
+                            </small>
+                            <select :value="perPage" @change="changePerPage(+$event.target.value)" class="form-select form-select-sm" style="width: 70px;">
+                                <option v-for="n in [10, 25, 50, 100]" :key="n" :value="n">{{ n }}</option>
+                            </select>
+                        </div>
                         <Pagination :links="rows.links" />
                     </div>
                 </div>
@@ -356,3 +364,11 @@ function submitClear() {
         </div>
     </Modal>
 </template>
+
+<style scoped>
+/* Pastikan semua input berbentuk kotak (tidak bulat) */
+.form-control,
+.form-select {
+    border-radius: 0.25rem !important;
+}
+</style>

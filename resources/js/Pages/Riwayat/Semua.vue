@@ -41,6 +41,11 @@ watch([perPage, gudangId, status, dateFrom, dateTo], reload);
 
 function changePerPage(n) { perPage.value = n; }
 
+function fmtRpNumber(v) {
+    if (v === null || v === undefined || v === '') return '0';
+    return Number(v).toLocaleString('id-ID');
+}
+
 function resetFilters() {
     search.value = '';
     gudangId.value = '';
@@ -204,7 +209,7 @@ function printMutasi(mutasi) {
                                     <td>{{ item.supplier?.nama_supplier || '-' }}</td>
                                     <td>{{ item.items_count }}</td>
                                     <td>{{ item.total_qty?.toLocaleString('id-ID') || 0 }}</td>
-                                    <td>Rp {{ (item.total_value || 0).toLocaleString('id-ID') }}</td>
+                                    <td><span class="rupiah-format"><span class="rp">Rp</span><span class="amount">{{ fmtRpNumber(item.total_value) }}</span></span></td>
                                     <td>
                                         <span v-if="!item.cancelled_at" class="badge rounded-pill" :class="getStatusBadge(item.status)">
                                             {{ item.status }}
@@ -244,3 +249,28 @@ function printMutasi(mutasi) {
         </div>
     </div>
 </template>
+
+<style scoped>
+/* Pastikan semua input berbentuk kotak (tidak bulat) */
+.form-control,
+.form-select {
+    border-radius: 0.25rem !important;
+}
+
+.rupiah-format {
+    display: inline-flex;
+    justify-content: space-between;
+    width: 100%;
+    gap: 0.5rem;
+}
+
+.rupiah-format .rp {
+    text-align: left;
+    flex-shrink: 0;
+}
+
+.rupiah-format .amount {
+    text-align: right;
+    flex-grow: 1;
+}
+</style>

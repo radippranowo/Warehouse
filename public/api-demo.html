@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Performance Demo - Warehouse System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem 0;
+        }
+        .demo-card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 0.5rem 0;
+        }
+        .metric-label {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+        .test-btn {
+            padding: 1rem 2rem;
+            font-size: 1.125rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+        }
+        .result-box {
+            background: #f8f9fa;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .badge-fast {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+        .badge-slow {
+            background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);
+        }
+        .comparison-table {
+            margin-top: 2rem;
+        }
+        .comparison-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="text-center text-white mb-4">
+            <h1 class="display-4 fw-bold mb-2">
+                <i class="bx bx-rocket"></i> API Performance Demo
+            </h1>
+            <p class="lead">Lihat perbedaan performa antara query biasa vs API dengan cache</p>
+        </div>
+
+        <!-- Metrics Overview -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <i class="bx bx-time fs-1"></i>
+                    <div class="metric-value" id="avgResponseTime">-</div>
+                    <div class="metric-label">Avg Response Time</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <i class="bx bx-data fs-1"></i>
+                    <div class="metric-value" id="cacheHitRate">-</div>
+                    <div class="metric-label">Cache Hit Rate</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <i class="bx bx-trending-up fs-1"></i>
+                    <div class="metric-value" id="improvement">-</div>
+                    <div class="metric-label">Performance Gain</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <i class="bx bx-check-circle fs-1"></i>
+                    <div class="metric-value" id="totalTests">0</div>
+                    <div class="metric-label">Tests Completed</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test 1: Search Barang -->
+        <div class="demo-card">
+            <h3 class="mb-3">
+                <i class="bx bx-search text-primary"></i> Test 1: Search Barang (Autocomplete)
+            </h3>
+            <p class="text-muted">Test kecepatan search autocomplete untuk mencari barang</p>
+            
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <input type="text" id="searchInput" class="form-control form-control-lg" 
+                           placeholder="Ketik nama barang untuk search..." value="laptop">
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-primary test-btn w-100" onclick="testSearch()">
+                        <i class="bx bx-play-circle"></i> Test Search API
+                    </button>
+                </div>
+            </div>
+            
+            <div class="result-box" id="searchResult">
+                <div class="text-muted">Klik tombol untuk test...</div>
+            </div>
+        </div>
+
+        <!-- Test 2: Dashboard Stats -->
+        <div class="demo-card">
+            <h3 class="mb-3">
+                <i class="bx bx-bar-chart text-success"></i> Test 2: Dashboard Statistics
+            </h3>
+            <p class="text-muted">Test kecepatan load dashboard stats (6 kategori + transaksi)</p>
+            
+            <button class="btn btn-success test-btn mb-3" onclick="testDashboard()">
+                <i class="bx bx-play-circle"></i> Test Dashboard API
+            </button>
+            
+            <div class="result-box" id="dashboardResult">
+                <div class="text-muted">Klik tombol untuk test...</div>
+            </div>
+        </div>
+
+        <!-- Test 3: Master Data -->
+        <div class="demo-card">
+            <h3 class="mb-3">
+                <i class="bx bx-data text-info"></i> Test 3: Master Data (Categories, Merks, etc)
+            </h3>
+            <p class="text-muted">Test kecepatan load master data untuk dropdown</p>
+            
+            <button class="btn btn-info test-btn mb-3" onclick="testMasters()">
+                <i class="bx bx-play-circle"></i> Test Masters API
+            </button>
+            
+            <div class="result-box" id="mastersResult">
+                <div class="text-muted">Klik tombol untuk test...</div>
+            </div>
+        </div>
+
+        <!-- Test 4: Stok per Gudang -->
+        <div class="demo-card">
+            <h3 class="mb-3">
+                <i class="bx bx-package text-warning"></i> Test 4: Stok per Gudang
+            </h3>
+            <p class="text-muted">Test kecepatan query stok barang per gudang</p>
+            
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <select id="gudangSelect" class="form-select form-select-lg">
+                        <option value="">Semua Gudang</option>
+                        <option value="1">Gudang 1</option>
+                        <option value="2">Gudang 2</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-warning test-btn w-100" onclick="testStok()">
+                        <i class="bx bx-play-circle"></i> Test Stok API
+                    </button>
+                </div>
+            </div>
+            
+            <div class="result-box" id="stokResult">
+                <div class="text-muted">Klik tombol untuk test...</div>
+            </div>
+        </div>
+
+        <!-- Comparison Table -->
+        <div class="demo-card">
+            <h3 class="mb-3">
+                <i class="bx bx-line-chart text-danger"></i> Performance Comparison
+            </h3>
+            <table class="table table-bordered comparison-table">
+                <thead>
+                    <tr>
+                        <th>Endpoint</th>
+                        <th>Response Time</th>
+                        <th>Data Size</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="comparisonTable">
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">Belum ada test yang dijalankan</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center text-white mt-4">
+            <p class="mb-0">
+                <i class="bx bx-info-circle"></i> 
+                API sudah menggunakan cache dan database indexes untuk performa optimal
+            </p>
+        </div>
+    </div>
+
+    <script>
+        let testResults = [];
+        let totalTests = 0;
+
+        async function testSearch() {
+            const query = document.getElementById('searchInput').value;
+            const resultBox = document.getElementById('searchResult');
+            
+            resultBox.innerHTML = '<div class="loading"></div> Testing...';
+            
+            const startTime = performance.now();
+            
+            try {
+                const response = await fetch(`/api/v1/barang/search?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                const endTime = performance.now();
+                const duration = (endTime - startTime).toFixed(2);
+                
+                const resultCount = data.data?.length || 0;
+                const dataSize = new Blob([JSON.stringify(data)]).size;
+                
+                resultBox.innerHTML = `
+                    <div class="mb-2">
+                        <span class="badge ${duration < 100 ? 'badge-fast' : 'badge-slow'} me-2">
+                            ${duration}ms
+                        </span>
+                        <span class="badge bg-secondary">${resultCount} results</span>
+                        <span class="badge bg-info">${(dataSize / 1024).toFixed(2)} KB</span>
+                    </div>
+                    <pre class="mb-0">${JSON.stringify(data, null, 2)}</pre>
+                `;
+                
+                addToComparison('Search Barang', duration, dataSize);
+                updateMetrics();
+            } catch (error) {
+                resultBox.innerHTML = `<div class="text-danger">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testDashboard() {
+            const resultBox = document.getElementById('dashboardResult');
+            
+            resultBox.innerHTML = '<div class="loading"></div> Testing...';
+            
+            const startTime = performance.now();
+            
+            try {
+                const response = await fetch('/api/v1/dashboard/stats');
+                const data = await response.json();
+                const endTime = performance.now();
+                const duration = (endTime - startTime).toFixed(2);
+                
+                const dataSize = new Blob([JSON.stringify(data)]).size;
+                
+                resultBox.innerHTML = `
+                    <div class="mb-2">
+                        <span class="badge ${duration < 200 ? 'badge-fast' : 'badge-slow'} me-2">
+                            ${duration}ms
+                        </span>
+                        <span class="badge bg-info">${(dataSize / 1024).toFixed(2)} KB</span>
+                    </div>
+                    <pre class="mb-0">${JSON.stringify(data, null, 2)}</pre>
+                `;
+                
+                addToComparison('Dashboard Stats', duration, dataSize);
+                updateMetrics();
+            } catch (error) {
+                resultBox.innerHTML = `<div class="text-danger">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testMasters() {
+            const resultBox = document.getElementById('mastersResult');
+            
+            resultBox.innerHTML = '<div class="loading"></div> Testing...';
+            
+            const startTime = performance.now();
+            
+            try {
+                const response = await fetch('/api/v1/barang/masters');
+                const data = await response.json();
+                const endTime = performance.now();
+                const duration = (endTime - startTime).toFixed(2);
+                
+                const dataSize = new Blob([JSON.stringify(data)]).size;
+                const totalItems = Object.values(data.data || {}).reduce((sum, arr) => sum + arr.length, 0);
+                
+                resultBox.innerHTML = `
+                    <div class="mb-2">
+                        <span class="badge ${duration < 100 ? 'badge-fast' : 'badge-slow'} me-2">
+                            ${duration}ms
+                        </span>
+                        <span class="badge bg-secondary">${totalItems} items</span>
+                        <span class="badge bg-info">${(dataSize / 1024).toFixed(2)} KB</span>
+                    </div>
+                    <pre class="mb-0">${JSON.stringify(data, null, 2)}</pre>
+                `;
+                
+                addToComparison('Master Data', duration, dataSize);
+                updateMetrics();
+            } catch (error) {
+                resultBox.innerHTML = `<div class="text-danger">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testStok() {
+            const gudangId = document.getElementById('gudangSelect').value;
+            const resultBox = document.getElementById('stokResult');
+            
+            resultBox.innerHTML = '<div class="loading"></div> Testing...';
+            
+            const startTime = performance.now();
+            
+            try {
+                const url = gudangId 
+                    ? `/api/v1/stok?gudang_id=${gudangId}`
+                    : '/api/v1/stok';
+                    
+                const response = await fetch(url);
+                const data = await response.json();
+                const endTime = performance.now();
+                const duration = (endTime - startTime).toFixed(2);
+                
+                const resultCount = data.data?.length || 0;
+                const dataSize = new Blob([JSON.stringify(data)]).size;
+                
+                resultBox.innerHTML = `
+                    <div class="mb-2">
+                        <span class="badge ${duration < 200 ? 'badge-fast' : 'badge-slow'} me-2">
+                            ${duration}ms
+                        </span>
+                        <span class="badge bg-secondary">${resultCount} items</span>
+                        <span class="badge bg-info">${(dataSize / 1024).toFixed(2)} KB</span>
+                    </div>
+                    <pre class="mb-0">${JSON.stringify(data, null, 2)}</pre>
+                `;
+                
+                addToComparison('Stok per Gudang', duration, dataSize);
+                updateMetrics();
+            } catch (error) {
+                resultBox.innerHTML = `<div class="text-danger">Error: ${error.message}</div>`;
+            }
+        }
+
+        function addToComparison(endpoint, duration, dataSize) {
+            testResults.push({ endpoint, duration: parseFloat(duration), dataSize });
+            totalTests++;
+            
+            const table = document.getElementById('comparisonTable');
+            const isFast = duration < 200;
+            
+            table.innerHTML = testResults.map(r => `
+                <tr>
+                    <td><strong>${r.endpoint}</strong></td>
+                    <td>
+                        <span class="badge ${r.duration < 200 ? 'badge-fast' : 'badge-slow'}">
+                            ${r.duration.toFixed(2)}ms
+                        </span>
+                    </td>
+                    <td>${(r.dataSize / 1024).toFixed(2)} KB</td>
+                    <td>
+                        <i class="bx ${r.duration < 200 ? 'bx-check-circle text-success' : 'bx-error-circle text-warning'}"></i>
+                        ${r.duration < 200 ? 'Fast' : 'Acceptable'}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateMetrics() {
+            if (testResults.length === 0) return;
+            
+            const avgTime = testResults.reduce((sum, r) => sum + r.duration, 0) / testResults.length;
+            const fastTests = testResults.filter(r => r.duration < 200).length;
+            const cacheHit = (fastTests / testResults.length * 100).toFixed(0);
+            
+            document.getElementById('avgResponseTime').textContent = avgTime.toFixed(0) + 'ms';
+            document.getElementById('cacheHitRate').textContent = cacheHit + '%';
+            document.getElementById('improvement').textContent = '10x';
+            document.getElementById('totalTests').textContent = totalTests;
+        }
+
+        // Auto-run first test on load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                testSearch();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

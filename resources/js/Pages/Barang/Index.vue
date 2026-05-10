@@ -330,41 +330,29 @@ function fmtRp(v) {
                 </div>
 
                 <div class="card-body">
-                    <div class="row mb-2">
-                        <div class="col-sm-8">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="search-box">
-                                    <div class="position-relative">
-                                        <input
-                                            id="search_barang"
-                                            name="search"
-                                            v-model="search"
-                                            type="text"
-                                            class="form-control btn-rounded"
-                                            placeholder="Cari kode / nama / part number..."
-                                            style="padding-left: 40px;"
-                                            aria-label="Cari barang"
-                                        >
-                                        <i class="bx bx-search-alt search-icon" style="left: 13px;"></i>
-                                    </div>
-                                </div>
-                                <div class="dropdown">
-                                    <button
-                                        class="btn btn-light btn-rounded shadow-sm border dropdown-toggle"
-                                        type="button"
-                                        data-bs-toggle="dropdown"
-                                        style="min-width: 70px;"
+                    <div class="row g-2 mb-3">
+                        <div class="col-lg-4 col-md-6">
+                            <label class="form-label mb-1 small fw-medium">Pencarian</label>
+                            <div class="search-box">
+                                <div class="position-relative">
+                                    <input
+                                        id="search_barang"
+                                        name="search"
+                                        v-model="search"
+                                        type="text"
+                                        class="form-control"
+                                        placeholder="Cari kode / nama / part number..."
+                                        style="padding-left: 36px; height: 38px;"
+                                        aria-label="Cari barang"
                                     >
-                                        {{ perPage }} <i class="mdi mdi-chevron-down ms-1"></i>
-                                    </button>
-                                    <ul class="dropdown-menu shadow rounded-4 border-0 mt-2">
-                                        <li v-for="n in [10, 25, 50, 100]" :key="n">
-                                            <a class="dropdown-item rounded-3" href="javascript:void(0);"
-                                                @click="changePerPage(n)">{{ n }}</a>
-                                        </li>
-                                    </ul>
+                                    <i class="bx bx-search-alt search-icon" style="left: 12px; font-size: 18px;"></i>
                                 </div>
-                                <small class="text-muted ms-2">
+                            </div>
+                        </div>
+                        <div class="col-lg-auto col-md-auto ms-auto">
+                            <label class="form-label mb-1 small fw-medium d-block">&nbsp;</label>
+                            <div class="d-flex gap-2 align-items-center">
+                                <small class="text-muted">
                                     Total: <strong>{{ displayBarangs.total?.toLocaleString('id-ID') }}</strong>
                                 </small>
                             </div>
@@ -372,7 +360,7 @@ function fmtRp(v) {
                     </div>
 
                     <div class="table-responsive">
-                        <table class="table align-middle table-nowrap table-check">
+                        <table class="table align-middle table-nowrap table-hover">
                             <thead class="table-light">
                                 <tr>
                                     <th style="width: 36px;">
@@ -394,7 +382,7 @@ function fmtRp(v) {
                                     <th>Group</th>
                                     <th>Satuan</th>
                                     <th>Total Stok</th>
-                                    <th>Harga Beli</th>
+                                    <th>Harga Jual</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -422,7 +410,7 @@ function fmtRp(v) {
                                             {{ item.stok_total ?? 0 }}
                                         </span>
                                     </td>
-                                    <td>{{ fmtRp(item.harga_beli) }}</td>
+                                    <td>{{ fmtRp(item.harga_jual) }}</td>
                                     <td>
                                         <Link :href="`/barang/${item.id}`"
                                             class="btn btn-sm btn-soft-primary border-0 shadow-sm bx bx-show font-size-16"
@@ -446,9 +434,17 @@ function fmtRp(v) {
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center mt-3">
-                        <small class="text-muted">
-                            Menampilkan {{ displayBarangs.from ?? 0 }}–{{ displayBarangs.to ?? 0 }} dari {{ displayBarangs.total }}
-                        </small>
+                        <div class="d-flex align-items-center gap-2">
+                            <small class="text-muted">
+                                Menampilkan {{ displayBarangs.from ?? 0 }}–{{ displayBarangs.to ?? 0 }} dari {{ displayBarangs.total }}
+                            </small>
+                            <select v-model="perPage" @change="changePerPage(perPage)" class="form-select form-select-sm" style="width: 70px;">
+                                <option :value="10">10</option>
+                                <option :value="25">25</option>
+                                <option :value="50">50</option>
+                                <option :value="100">100</option>
+                            </select>
+                        </div>
                         <Pagination :links="displayBarangs.links" />
                     </div>
                 </div>
@@ -566,6 +562,12 @@ function fmtRp(v) {
 </template>
 
 <style scoped>
+/* Pastikan semua input berbentuk kotak (tidak bulat) */
+.form-control,
+.form-select {
+    border-radius: 0.25rem !important;
+}
+
 .is-invalid {
     border-color: #f46a6a !important;
     background-color: #fff5f5;

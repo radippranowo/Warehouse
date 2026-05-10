@@ -26,6 +26,10 @@ class BarangController extends Controller
         if ($request->has('_')) {
             Cache::forget('barang.masters');
             Cache::forget('mutasi.masters');
+            Cache::forget('mutasi.masters.pemasukan');
+            Cache::forget('mutasi.masters.pengeluaran');
+            Cache::forget('mutasi.masters.transfer');
+            Cache::forget('mutasi.masters.penyesuaian');
         }
 
         $perPage = (int) $request->input('perPage', 25);
@@ -113,7 +117,14 @@ class BarangController extends Controller
         unset($row);
 
         DB::transaction(fn () => Barang::insert($items));
+        
+        // Flush all cache
+        Cache::forget('barang.masters');
         Cache::forget('mutasi.masters');
+        Cache::forget('mutasi.masters.pemasukan');
+        Cache::forget('mutasi.masters.pengeluaran');
+        Cache::forget('mutasi.masters.transfer');
+        Cache::forget('mutasi.masters.penyesuaian');
 
         return redirect('/barang');
     }
@@ -153,7 +164,14 @@ class BarangController extends Controller
     public function update(UpdateBarangRequest $request, Barang $barang)
     {
         $barang->update($request->validated());
+        
+        // Flush all cache
+        Cache::forget('barang.masters');
         Cache::forget('mutasi.masters');
+        Cache::forget('mutasi.masters.pemasukan');
+        Cache::forget('mutasi.masters.pengeluaran');
+        Cache::forget('mutasi.masters.transfer');
+        Cache::forget('mutasi.masters.penyesuaian');
 
         return back();
     }
@@ -168,7 +186,14 @@ class BarangController extends Controller
         }
 
         $barang->delete();
+        
+        // Flush all cache
+        Cache::forget('barang.masters');
         Cache::forget('mutasi.masters');
+        Cache::forget('mutasi.masters.pemasukan');
+        Cache::forget('mutasi.masters.pengeluaran');
+        Cache::forget('mutasi.masters.transfer');
+        Cache::forget('mutasi.masters.penyesuaian');
 
         return back()->with('success', 'Barang dihapus');
     }
@@ -193,7 +218,14 @@ class BarangController extends Controller
         }
 
         $deleted = DB::transaction(fn () => Barang::whereIn('id', $deletable->pluck('id'))->delete());
+        
+        // Flush all cache
+        Cache::forget('barang.masters');
         Cache::forget('mutasi.masters');
+        Cache::forget('mutasi.masters.pemasukan');
+        Cache::forget('mutasi.masters.pengeluaran');
+        Cache::forget('mutasi.masters.transfer');
+        Cache::forget('mutasi.masters.penyesuaian');
 
         $msg = "{$deleted} barang dihapus"
             . ($blockedCount ? ", {$blockedCount} dilewati (masih punya stok / riwayat mutasi)" : '');
@@ -277,9 +309,20 @@ class BarangController extends Controller
             }
         });
 
+        // Flush all cache - termasuk semua cache transaksi
         Cache::forget('barang.masters');
         Cache::forget('mutasi.masters');
+        Cache::forget('mutasi.masters.pemasukan');
+        Cache::forget('mutasi.masters.pengeluaran');
+        Cache::forget('mutasi.masters.transfer');
+        Cache::forget('mutasi.masters.penyesuaian');
+        
+        // Flush stok summary cache per gudang (sebelum gudang dihapus)
         DB::table('gudangs')->pluck('id')->each(fn ($id) => Cache::forget("stok.summary.{$id}"));
+        
+        // Flush all Inertia cache untuk force reload data
+        // Ini penting supaya halaman transaksi dapat data fresh
+        session()->put('_cache_bust', now()->timestamp);
 
         $labels = [
             'barang'       => 'barang',
@@ -351,8 +394,15 @@ class BarangController extends Controller
             ]);
         }
 
+        // Flush all cache - termasuk semua cache transaksi
         Cache::forget('barang.masters');
         Cache::forget('mutasi.masters');
+        Cache::forget('mutasi.masters.pemasukan');
+        Cache::forget('mutasi.masters.transfer');
+        Cache::forget('mutasi.masters.penyesuaian');
+        
+        // Force reload data di halaman transaksi
+        session()->put('_cache_bust', now()->timestamp);
 
         $hasIssue = count($importer->errors) > 0 || $importer->skipped > 0;
         return back()->with('import_result', [

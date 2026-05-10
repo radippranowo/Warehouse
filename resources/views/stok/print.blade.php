@@ -36,6 +36,10 @@
     .meta { color: #555; font-size: 9px; text-align: right; margin-top: 12px; }
     .filter-line { margin-bottom: 8px; font-size: 10px; color: #444; }
 
+    .rupiah { display: inline-flex; justify-content: space-between; width: 100%; }
+    .rupiah .rp { margin-right: 4px; }
+    .rupiah .amount { text-align: right; flex: 1; }
+
     .no-print { margin-bottom: 12px; }
     .no-print button { padding: 6px 14px; cursor: pointer; }
 
@@ -85,7 +89,7 @@
         </div>
         <div class="box">
             <div class="label">Total Nilai (harga jual)</div>
-            <div class="value" style="color:#1e6091;">Rp {{ number_format($summary['total_value'], 0, ',', '.') }}</div>
+            <div class="value" style="color:#1e6091;"><span class="rupiah"><span class="rp">Rp</span><span class="amount">{{ number_format($summary['total_value'], 0, ',', '.') }}</span></span></div>
         </div>
     </div>
 
@@ -134,8 +138,8 @@
                     <td class="text-end"><strong>{{ number_format($stok, 0, ',', '.') }}</strong></td>
                     <td class="text-end">{{ number_format($min, 0, ',', '.') }}</td>
                     <td>{{ $status }}</td>
-                    <td class="text-end">{{ $r->harga_jual ? 'Rp ' . number_format($r->harga_jual, 0, ',', '.') : '-' }}</td>
-                    <td class="text-end">{{ $nilai > 0 ? 'Rp ' . number_format($nilai, 0, ',', '.') : '-' }}</td>
+                    <td class="text-end">{!! $r->harga_jual ? '<span class="rupiah"><span class="rp">Rp</span><span class="amount">' . number_format($r->harga_jual, 0, ',', '.') . '</span></span>' : '-' !!}</td>
+                    <td class="text-end">{!! $nilai > 0 ? '<span class="rupiah"><span class="rp">Rp</span><span class="amount">' . number_format($nilai, 0, ',', '.') . '</span></span>' : '-' !!}</td>
                 </tr>
             @endforeach
             @if(!count($items))
@@ -145,7 +149,7 @@
         <tfoot>
             <tr>
                 <th colspan="10" class="text-end">Grand Total Nilai Stok</th>
-                <th class="text-end">Rp {{ number_format($grandTotal, 0, ',', '.') }}</th>
+                <th class="text-end"><span class="rupiah"><span class="rp">Rp</span><span class="amount">{{ number_format($grandTotal, 0, ',', '.') }}</span></span></th>
             </tr>
         </tfoot>
     </table>

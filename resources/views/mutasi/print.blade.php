@@ -113,6 +113,10 @@
     .no-print button:first-child { background: #0d6efd; color: #fff; border-color: #0d6efd; }
     .no-print button:first-child:hover { background: #0b5ed7; }
 
+    .rupiah { display: inline-flex; justify-content: space-between; width: 100%; }
+    .rupiah .rp { margin-right: 4px; }
+    .rupiah .amount { text-align: right; flex: 1; }
+
     @media print {
         .no-print { display: none !important; }
         body { padding: 0; }
@@ -227,10 +231,10 @@
                     <td class="text-center"><strong>{{ number_format($it->qty, 0, ',', '.') }}</strong></td>
                     <td class="text-center">{{ $it->barang?->satuan ?? '-' }}</td>
                     @if($totalNilai > 0)
-                        <td class="text-end">{{ $it->harga_satuan ? 'Rp ' . number_format($it->harga_satuan, 0, ',', '.') : '-' }}</td>
+                        <td class="text-end">{!! $it->harga_satuan ? '<span class="rupiah"><span class="rp">Rp</span><span class="amount">' . number_format($it->harga_satuan, 0, ',', '.') . '</span></span>' : '-' !!}</td>
                         <td class="text-end">
                             @php $sub = (float)($it->harga_satuan ?? 0) * (float)$it->qty; @endphp
-                            <strong>{{ $sub > 0 ? 'Rp ' . number_format($sub, 0, ',', '.') : '-' }}</strong>
+                            <strong>{!! $sub > 0 ? '<span class="rupiah"><span class="rp">Rp</span><span class="amount">' . number_format($sub, 0, ',', '.') . '</span></span>' : '-' !!}</strong>
                         </td>
                     @endif
                     <td>{{ $it->keterangan ?: '-' }}</td>
@@ -249,7 +253,7 @@
         @if($totalNilai > 0)
         <tr>
             <td class="lbl">Total Nilai:</td>
-            <td class="val">Rp {{ number_format($totalNilai, 0, ',', '.') }}</td>
+            <td class="val"><span class="rupiah"><span class="rp">Rp</span><span class="amount">{{ number_format($totalNilai, 0, ',', '.') }}</span></span></td>
         </tr>
         @endif
     </table>

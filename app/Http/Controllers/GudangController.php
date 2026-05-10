@@ -38,16 +38,30 @@ class GudangController extends Controller
     public function store(GudangRequest $request)
     {
         Gudang::create($request->validated());
+        
+        // Flush all cache
         Cache::forget('barang.masters');
         Cache::forget('mutasi.masters');
+        Cache::forget('mutasi.masters.pemasukan');
+        Cache::forget('mutasi.masters.pengeluaran');
+        Cache::forget('mutasi.masters.transfer');
+        Cache::forget('mutasi.masters.penyesuaian');
+        
         return back()->with('success', 'Gudang berhasil ditambah');
     }
 
     public function update(GudangRequest $request, Gudang $gudang)
     {
         $gudang->update($request->validated());
+        
+        // Flush all cache
         Cache::forget('barang.masters');
         Cache::forget('mutasi.masters');
+        Cache::forget('mutasi.masters.pemasukan');
+        Cache::forget('mutasi.masters.pengeluaran');
+        Cache::forget('mutasi.masters.transfer');
+        Cache::forget('mutasi.masters.penyesuaian');
+        
         return back()->with('success', 'Gudang berhasil diubah');
     }
 
@@ -57,8 +71,15 @@ class GudangController extends Controller
             return back()->with('error', "Gudang '{$gudang->nama_gudang}' masih punya stok barang.");
         }
         $gudang->delete();
+        
+        // Flush all cache
         Cache::forget('barang.masters');
         Cache::forget('mutasi.masters');
+        Cache::forget('mutasi.masters.pemasukan');
+        Cache::forget('mutasi.masters.pengeluaran');
+        Cache::forget('mutasi.masters.transfer');
+        Cache::forget('mutasi.masters.penyesuaian');
+        
         return back()->with('success', 'Gudang berhasil dihapus');
     }
 
@@ -80,8 +101,15 @@ class GudangController extends Controller
         }
 
         $deleted = Gudang::whereIn('id', $deletable->pluck('id'))->delete();
+        
+        // Flush all cache
         Cache::forget('barang.masters');
         Cache::forget('mutasi.masters');
+        Cache::forget('mutasi.masters.pemasukan');
+        Cache::forget('mutasi.masters.pengeluaran');
+        Cache::forget('mutasi.masters.transfer');
+        Cache::forget('mutasi.masters.penyesuaian');
+        
         $msg = "{$deleted} gudang dihapus"
             . ($blockedCount ? ", {$blockedCount} dilewati (masih punya stok)" : '');
         return back()->with('success', $msg);

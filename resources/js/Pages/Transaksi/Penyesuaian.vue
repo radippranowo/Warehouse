@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue';
 import { useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import SearchSelect from '@/Components/SearchSelect.vue';
+import SearchInput from '@/Components/SearchInput.vue';
 
 const props = defineProps({
     barangs: { type: Array, required: true },
@@ -28,6 +28,17 @@ const form = useForm({
     referensi: '',
     keterangan: '',
     items: [emptyRow()],
+});
+
+const barangOptions = computed(() => {
+    return props.barangs.map(b => ({
+        value: b.id,
+        label: `${b.kode_barang} - ${b.nama_barang}`,
+        kode: b.kode_barang,
+        nama: b.nama_barang,
+        satuan: b.satuan,
+        harga: b.harga || 0,
+    }));
 });
 
 function addRow() {
@@ -144,15 +155,13 @@ function submit() {
                                     <tr v-for="(row, idx) in form.items" :key="row._key">
                                         <td class="text-center">{{ idx + 1 }}</td>
                                         <td class="position-relative">
-                                            <SearchSelect
+                                            <SearchInput
+                                                :id="`barang_penyesuaian_${idx}`"
                                                 v-model="row.barang_id"
-                                                :options="barangs"
-                                                option-value="id"
-                                                option-label="kode_barang"
-                                                :option-sublabel="(b) => b.nama_barang"
-                                                placeholder="Pilih"
-                                                search-placeholder="Cari barang..."
-                                                :invalid="!!rowError(idx, 'barang_id')" />
+                                                :options="barangOptions"
+                                                placeholder="Cari barang..."
+                                                :invalid="!!rowError(idx, 'barang_id')"
+                                                :tabindex="idx * 10 + 1" />
                                             <div v-if="rowError(idx, 'barang_id')" class="invalid-feedback-absolute">
                                                 {{ rowError(idx, 'barang_id') }}
                                             </div>

@@ -72,7 +72,7 @@ function printMutasi(mutasi) {
                         <div class="col-md-2 mb-2">
                             <div class="search-box">
                                 <div class="position-relative">
-                                    <input id="search_transfer" name="search" v-model="search" type="text" class="form-control btn-rounded"
+                                    <input id="search_transfer" name="search" v-model="search" type="text" class="form-control"
                                         placeholder="Cari nomor..." style="padding-left: 40px;" aria-label="Cari transaksi transfer">
                                     <i class="bx bx-search-alt search-icon" style="left: 13px;"></i>
                                 </div>
@@ -95,10 +95,10 @@ function printMutasi(mutasi) {
                             </select>
                         </div>
                         <div class="col-md-2 mb-2">
-                            <input v-model="dateFrom" type="date" class="form-control btn-rounded">
+                            <input v-model="dateFrom" type="date" class="form-control">
                         </div>
                         <div class="col-md-2 mb-2">
-                            <input v-model="dateTo" type="date" class="form-control btn-rounded">
+                            <input v-model="dateTo" type="date" class="form-control">
                         </div>
                         <div class="col-md-2 mb-2">
                             <div class="dropdown">
@@ -175,3 +175,11 @@ function printMutasi(mutasi) {
         </div>
     </div>
 </template>
+
+<style scoped>
+/* Pastikan semua input berbentuk kotak (tidak bulat) */
+.form-control,
+.form-select {
+    border-radius: 0.25rem !important;
+}
+</style>

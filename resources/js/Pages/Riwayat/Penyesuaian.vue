@@ -175,3 +175,11 @@ function printMutasi(mutasi) {
         </div>
     </div>
 </template>
+
+<style scoped>
+/* Pastikan semua input berbentuk kotak (tidak bulat) */
+.form-control,
+.form-select {
+    border-radius: 0.25rem !important;
+}
+</style>

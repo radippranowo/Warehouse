@@ -1,0 +1,244 @@
+<script setup>
+import { ref, computed } from 'vue';
+import { router, Link } from '@inertiajs/vue3';
+import AppLayout from '@/Layouts/AppLayout.vue';
+
+const props = defineProps({
+    users: { type: Object, required: true },
+    roles: { type: Array, required: true },
+    filters: { type: Object, default: () => ({}) },
+});
+
+defineOptions({ layout: AppLayout });
+
+const search = ref(props.filters.search || '');
+const roleFilter = ref(props.filters.role || '');
+const statusFilter = ref(props.filters.status || '');
+const perPage = ref(props.filters.per_page || 20);
+
+function applyFilters() {
+    router.get('/user', {
+        search: search.value,
+        role: roleFilter.value,
+        status: statusFilter.value,
+        per_page: perPage.value,
+    }, {
+        preserveState: true,
+        preserveScroll: true,
+    });
+}
+
+function resetFilters() {
+    search.value = '';
+    roleFilter.value = '';
+    statusFilter.value = '';
+    perPage.value = 20;
+    applyFilters();
+}
+
+function deleteUser(user) {
+    if (confirm(`Hapus user "${user.name}"?`)) {
+        router.delete(`/user/${user.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                window.toast?.success('User berhasil dihapus');
+            },
+        });
+    }
+}
+
+function toggleStatus(user) {
+    router.post(`/user/${user.id}/toggle-status`, {}, {
+        preserveScroll: true,
+        onSuccess: () => {
+            const status = !user.is_active ? 'diaktifkan' : 'dinonaktifkan';
+            window.toast?.success(`User berhasil ${status}`);
+        },
+    });
+}
+
+function getRoleBadge(roleName) {
+    const badges = {
+        admin: 'bg-danger',
+        manager: 'bg-primary',
+        staff: 'bg-success',
+        viewer: 'bg-secondary',
+    };
+    return badges[roleName] || 'bg-info';
+}
+</script>
+
+<template>
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h4 class="mb-1 fw-bold">
+                            <i class="bx bx-user me-2"></i>User Management
+                        </h4>
+                        <p class="text-muted small mb-0">Kelola user dan akses sistem</p>
+                    </div>
+                    <Link href="/user/create" class="btn btn-primary">
+                        <i class="bx bx-plus me-1"></i>Tambah User
+                    </Link>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label small fw-medium">Cari User</label>
+                        <input v-model="search" @keyup.enter="applyFilters" type="text" 
+                            class="form-control" placeholder="Nama atau email...">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-medium">Role</label>
+                        <select v-model="roleFilter" @change="applyFilters" class="form-select">
+                            <option value="">Semua Role</option>
+                            <option v-for="role in roles" :key="role.id" :value="role.id">
+                                {{ role.display_name }}
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-medium">Status</label>
+                        <select v-model="statusFilter" @change="applyFilters" class="form-select">
+                            <option value="">Semua</option>
+                            <option value="1">Aktif</option>
+                            <option value="0">Nonaktif</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-medium">Per Page</label>
+                        <select v-model="perPage" @change="applyFilters" class="form-select">
+                            <option :value="10">10</option>
+                            <option :value="20">20</option>
+                            <option :value="50">50</option>
+                            <option :value="100">100</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1 d-flex align-items-end">
+                        <button @click="resetFilters" class="btn btn-secondary w-100" title="Reset Filter">
+                            <i class="bx bx-reset"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Table -->
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 5%;">#</th>
+                                <th style="width: 25%;">Nama</th>
+                                <th style="width: 25%;">Email</th>
+                                <th style="width: 15%;">Role</th>
+                                <th style="width: 10%;" class="text-center">Status</th>
+                                <th style="width: 10%;">Last Login</th>
+                                <th style="width: 10%;" class="text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="(user, index) in users.data" :key="user.id">
+                                <td>{{ users.from + index }}</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-xs rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center me-2">
+                                            <i class="bx bx-user text-primary"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-medium">{{ user.name }}</div>
+                                            <small v-if="user.id === $page.props.auth.user.id" class="text-muted">
+                                                (Anda)
+                                            </small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ user.email }}</td>
+                                <td>
+                                    <span v-if="user.role" :class="`badge ${getRoleBadge(user.role.name)}`">
+                                        {{ user.role.display_name }}
+                                    </span>
+                                    <span v-else class="badge bg-secondary">No Role</span>
+                                </td>
+                                <td class="text-center">
+                                    <span v-if="user.is_active" class="badge bg-success">Aktif</span>
+                                    <span v-else class="badge bg-danger">Nonaktif</span>
+                                </td>
+                                <td>
+                                    <small v-if="user.last_login_at" class="text-muted">
+                                        {{ new Date(user.last_login_at).toLocaleDateString('id-ID') }}
+                                    </small>
+                                    <small v-else class="text-muted">-</small>
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <Link :href="`/user/${user.id}/edit`" class="btn btn-outline-primary" title="Edit">
+                                            <i class="bx bx-edit"></i>
+                                        </Link>
+                                        <button @click="toggleStatus(user)" class="btn btn-outline-warning" 
+                                            :title="user.is_active ? 'Nonaktifkan' : 'Aktifkan'"
+                                            :disabled="user.id === $page.props.auth.user.id">
+                                            <i :class="user.is_active ? 'bx bx-lock' : 'bx bx-lock-open'"></i>
+                                        </button>
+                                        <button @click="deleteUser(user)" class="btn btn-outline-danger" title="Hapus"
+                                            :disabled="user.id === $page.props.auth.user.id">
+                                            <i class="bx bx-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr v-if="users.data.length === 0">
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    <i class="bx bx-info-circle fs-1 d-block mb-2"></i>
+                                    Tidak ada data user
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div v-if="users.last_page > 1" class="d-flex justify-content-between align-items-center mt-3">
+                    <div class="text-muted small">
+                        Menampilkan {{ users.from }} - {{ users.to }} dari {{ users.total }} user
+                    </div>
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0">
+                            <li :class="['page-item', { disabled: !users.prev_page_url }]">
+                                <Link :href="users.prev_page_url || '#'" class="page-link">
+                                    <i class="bx bx-chevron-left"></i>
+                                </Link>
+                            </li>
+                            <li v-for="page in users.links.slice(1, -1)" :key="page.label" 
+                                :class="['page-item', { active: page.active }]">
+                                <Link :href="page.url" class="page-link" v-html="page.label"></Link>
+                            </li>
+                            <li :class="['page-item', { disabled: !users.next_page_url }]">
+                                <Link :href="users.next_page_url || '#'" class="page-link">
+                                    <i class="bx bx-chevron-right"></i>
+                                </Link>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<style scoped>
+.avatar-xs {
+    width: 32px;
+    height: 32px;
+}
+</style>

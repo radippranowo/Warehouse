@@ -3,6 +3,7 @@ import '../css/app.css';
 
 import { createApp, h } from 'vue';
 import { createInertiaApp, Link } from '@inertiajs/vue3';
+import { ZiggyVue } from 'ziggy-js';
 
 createInertiaApp({
     resolve: (name) => {
@@ -14,10 +15,21 @@ createInertiaApp({
         return page;
     },
     setup({ el, App, props, plugin }) {
-        createApp({ render: () => h(App, props) })
+        const app = createApp({ render: () => h(App, props) })
             .use(plugin)
-            .component('Link', Link)
-            .mount(el);
+            .use(ZiggyVue, props.initialPage?.props?.ziggy)
+            .component('Link', Link);
+        
+        // Global error handler
+        app.config.errorHandler = (err, instance, info) => {
+            console.error('Vue Error:', err);
+            console.error('Error Info:', info);
+            console.error('Component:', instance);
+        };
+        
+        app.mount(el);
     },
-    progress: false,
+    progress: {
+        color: '#4B5563',
+    },
 });

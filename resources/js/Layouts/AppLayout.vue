@@ -6,6 +6,16 @@ import SyncIndicator from '@/Components/SyncIndicator.vue';
 
 const page = usePage();
 
+function getRoleBadgeClass(roleName) {
+    const badges = {
+        'admin': 'bg-danger',
+        'manager': 'bg-primary',
+        'staff': 'bg-success',
+        'viewer': 'bg-secondary',
+    };
+    return badges[roleName] || 'bg-info';
+}
+
 function initSidebar() {
     if (!window.jQuery) return;
     const $ = window.jQuery;
@@ -141,12 +151,43 @@ onBeforeUnmount(() => {
 
                     <div class="dropdown d-inline-block">
                         <button type="button" class="btn header-item waves-effect" data-bs-toggle="dropdown">
+                            <img class="rounded-circle header-profile-user" src="/assets/images/users/avatar-1.jpg" alt="Header Avatar">
                             <span class="d-none d-xl-inline-block ms-1">{{ page.props.auth?.user?.name ?? 'User' }}</span>
                             <i class="mdi mdi-chevron-down d-none d-xl-inline-block"></i>
                         </button>
                         <div class="dropdown-menu dropdown-menu-end">
+                            <!-- User Info -->
+                            <div class="dropdown-header noti-title">
+                                <h6 class="text-overflow m-0">Welcome!</h6>
+                            </div>
+                            <div class="dropdown-item-text">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0 me-2">
+                                        <img class="rounded-circle avatar-xs" src="/assets/images/users/avatar-1.jpg" alt="">
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-0">{{ page.props.auth?.user?.name ?? 'User' }}</h6>
+                                        <p class="text-muted mb-0 font-size-11">
+                                            <span class="badge" :class="getRoleBadgeClass(page.props.auth?.role?.name)">
+                                                {{ page.props.auth?.role?.display_name ?? page.props.auth?.role?.name ?? 'No Role' }}
+                                            </span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="dropdown-divider"></div>
                             <a class="dropdown-item" href="#">
                                 <i class="bx bx-user font-size-16 align-middle me-1"></i>Profile
+                            </a>
+                            <a class="dropdown-item" href="#">
+                                <i class="bx bx-wallet font-size-16 align-middle me-1"></i>My Wallet
+                            </a>
+                            <a class="dropdown-item d-block" href="#">
+                                <span class="badge bg-success float-end">11</span>
+                                <i class="bx bx-wrench font-size-16 align-middle me-1"></i>Settings
+                            </a>
+                            <a class="dropdown-item" href="#">
+                                <i class="bx bx-lock-open font-size-16 align-middle me-1"></i>Lock screen
                             </a>
                             <div class="dropdown-divider"></div>
                             <a class="dropdown-item text-danger" href="#"
@@ -180,7 +221,6 @@ onBeforeUnmount(() => {
                                 <li><Link href="/group"    prefetch cache-for="15m">Group</Link></li>
                                 <li><Link href="/gudang"   prefetch cache-for="15m">Gudang</Link></li>
                                 <li><Link href="/supplier" prefetch cache-for="15m">Supplier</Link></li>
-                                
                             </ul>
                         </li>
                         <li>
@@ -209,6 +249,22 @@ onBeforeUnmount(() => {
                                 <li><Link href="/riwayat/penyesuaian" prefetch cache-for="15m">Riwayat Penyesuaian</Link></li>
                             </ul>
                         </li>
+                        <li>
+                            <Link href="/laporan-keuntungan" prefetch cache-for="15m" class="waves-effect">
+                                <i class="bx bx-line-chart"></i><span>Laporan Keuntungan</span>
+                            </Link>
+                        </li>
+                        
+                        <!-- User Management (Admin Only) -->
+                        <li v-if="page.props.auth?.isAdmin">
+                            <a href="javascript:void(0);" class="has-arrow waves-effect">
+                                <i class="bx bx-user-circle"></i><span>User Management</span>
+                            </a>
+                            <ul class="sub-menu" aria-expanded="false">
+                                <li><Link href="/user" prefetch cache-for="15m">Kelola User</Link></li>
+                                <li><Link href="/role" prefetch cache-for="15m">Role & Permission</Link></li>
+                            </ul>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -234,6 +290,28 @@ onBeforeUnmount(() => {
     <ToastHost />
     <SyncIndicator />
 </template>
+
+<style scoped>
+.dropdown-item-text {
+    padding: 0.5rem 1rem;
+}
+
+.dropdown-header {
+    padding: 0.5rem 1rem;
+}
+
+.avatar-xs {
+    height: 2rem;
+    width: 2rem;
+}
+
+.header-profile-user {
+    height: 36px;
+    width: 36px;
+    background-color: #f8f9fa;
+    padding: 3px;
+}
+</style>
 
 <!-- <style>
 .page-fade-wrap {

@@ -129,6 +129,10 @@
     .no-print button:first-child { background: #0d6efd; color: #fff; border-color: #0d6efd; }
     .no-print button:first-child:hover { background: #0b5ed7; }
 
+    .rupiah { display: inline-flex; justify-content: space-between; width: 100%; }
+    .rupiah .rp { margin-right: 4px; }
+    .rupiah .amount { text-align: right; flex: 1; }
+
     @media print {
         .no-print { display: none !important; }
         body { padding: 0; }
@@ -193,7 +197,7 @@
             </div>
             <div class="stat">
                 <div class="label">Total Nilai</div>
-                <div class="value">Rp {{ number_format($totalNilai, 0, ',', '.') }}</div>
+                <div class="value"><span class="rupiah"><span class="rp">Rp</span><span class="amount">{{ number_format($totalNilai, 0, ',', '.') }}</span></span></div>
             </div>
         </div>
     </div>
@@ -248,10 +252,10 @@
                             <td class="text-center"><strong>{{ number_format($item->qty, 0, ',', '.') }}</strong></td>
                             <td class="text-center">{{ $item->barang?->satuan ?? '-' }}</td>
                             @if($mutasi->total_value > 0)
-                                <td class="text-end">{{ $item->harga_satuan ? 'Rp ' . number_format($item->harga_satuan, 0, ',', '.') : '-' }}</td>
+                                <td class="text-end">{!! $item->harga_satuan ? '<span class="rupiah"><span class="rp">Rp</span><span class="amount">' . number_format($item->harga_satuan, 0, ',', '.') . '</span></span>' : '-' !!}</td>
                                 <td class="text-end">
                                     @php $sub = (float)($item->harga_satuan ?? 0) * (float)$item->qty; @endphp
-                                    <strong>{{ $sub > 0 ? 'Rp ' . number_format($sub, 0, ',', '.') : '-' }}</strong>
+                                    <strong>{!! $sub > 0 ? '<span class="rupiah"><span class="rp">Rp</span><span class="amount">' . number_format($sub, 0, ',', '.') . '</span></span>' : '-' !!}</strong>
                                 </td>
                             @endif
                             <td>{{ $item->keterangan ?: '-' }}</td>
@@ -269,7 +273,7 @@
                 <div class="total">
                     Total: {{ number_format($mutasi->total_qty, 0, ',', '.') }} Item
                     @if($mutasi->total_value > 0)
-                        &middot; Rp {{ number_format($mutasi->total_value, 0, ',', '.') }}
+                        &middot; <span class="rupiah" style="display: inline;"><span class="rp">Rp</span> {{ number_format($mutasi->total_value, 0, ',', '.') }}</span>
                     @endif
                 </div>
             </div>
@@ -287,7 +291,7 @@
                 <strong>{{ number_format($totalTransaksi, 0, ',', '.') }}</strong> Transaksi &middot; 
                 <strong>{{ number_format($totalQty, 0, ',', '.') }}</strong> Qty
                 @if($totalNilai > 0)
-                    <div class="amount">Rp {{ number_format($totalNilai, 0, ',', '.') }}</div>
+                    <div class="amount"><span class="rupiah"><span class="rp">Rp</span><span class="amount">{{ number_format($totalNilai, 0, ',', '.') }}</span></span></div>
                 @endif
             </div>
         </div>

@@ -26,6 +26,12 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
         ]);
+        
+        $middleware->alias([
+            'auth' => \App\Http\Middleware\Authenticate::class,
+            'permission' => \App\Http\Middleware\CheckPermission::class,
+            'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

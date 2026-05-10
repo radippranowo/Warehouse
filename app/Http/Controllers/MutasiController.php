@@ -282,7 +282,16 @@ class MutasiController extends Controller
             Cache::forget("stok.summary.{$data['gudang_tujuan_id']}");
         }
 
-        return redirect('/mutasi')->with('success', 'Mutasi tersimpan');
+        // Redirect berdasarkan tipe transaksi
+        $redirectUrl = match($data['tipe']) {
+            'in' => '/riwayat/barang-masuk',
+            'out' => '/riwayat/barang-keluar',
+            'transfer' => '/riwayat/transfer-gudang',
+            'adjustment' => '/riwayat/penyesuaian-stok',
+            default => '/riwayat/semua',
+        };
+
+        return redirect($redirectUrl)->with('success', 'Mutasi tersimpan');
     }
 
     public function approve(Request $request, StokMutasi $mutasi)
@@ -456,11 +465,12 @@ class MutasiController extends Controller
     // Pengeluaran
     public function pengeluaran()
     {
-        $masters = Cache::remember('mutasi.masters', now()->addHour(), function () {
+        $masters = Cache::remember('mutasi.masters.pengeluaran', 3600, function () {
             return [
-                'barangs' => Barang::select('id', 'kode_barang', 'nama_barang', 'satuan')
+                'barangs' => Barang::select('id', 'kode_barang', 'nama_barang', 'satuan', 'harga_jual as harga')
                     ->where('is_active', true)
                     ->orderBy('nama_barang')
+                    ->limit(1000)
                     ->get()
                     ->toArray(),
                 'gudangs' => Gudang::select('id', 'kode_gudang', 'nama_gudang')
@@ -477,14 +487,12 @@ class MutasiController extends Controller
     // Pemasukan
     public function pemasukan()
     {
-        // Clear cache untuk memastikan data fresh
-        Cache::forget('mutasi.masters');
-        
-        $masters = Cache::remember('mutasi.masters', now()->addHour(), function () {
+        $masters = Cache::remember('mutasi.masters.pemasukan', 3600, function () {
             return [
-                'barangs' => Barang::select('id', 'kode_barang', 'nama_barang', 'satuan')
+                'barangs' => Barang::select('id', 'kode_barang', 'nama_barang', 'satuan', 'harga_beli as harga')
                     ->where('is_active', true)
                     ->orderBy('nama_barang')
+                    ->limit(1000)
                     ->get()
                     ->toArray(),
                 'gudangs' => Gudang::select('id', 'kode_gudang', 'nama_gudang')
@@ -506,11 +514,12 @@ class MutasiController extends Controller
     // Transfer
     public function transfer()
     {
-        $masters = Cache::remember('mutasi.masters', now()->addHour(), function () {
+        $masters = Cache::remember('mutasi.masters.transfer', 3600, function () {
             return [
                 'barangs' => Barang::select('id', 'kode_barang', 'nama_barang', 'satuan')
                     ->where('is_active', true)
                     ->orderBy('nama_barang')
+                    ->limit(1000)
                     ->get()
                     ->toArray(),
                 'gudangs' => Gudang::select('id', 'kode_gudang', 'nama_gudang')
@@ -527,11 +536,12 @@ class MutasiController extends Controller
     // Penyesuaian
     public function penyesuaian()
     {
-        $masters = Cache::remember('mutasi.masters', now()->addHour(), function () {
+        $masters = Cache::remember('mutasi.masters.penyesuaian', 3600, function () {
             return [
                 'barangs' => Barang::select('id', 'kode_barang', 'nama_barang', 'satuan')
                     ->where('is_active', true)
                     ->orderBy('nama_barang')
+                    ->limit(1000)
                     ->get()
                     ->toArray(),
                 'gudangs' => Gudang::select('id', 'kode_gudang', 'nama_gudang')

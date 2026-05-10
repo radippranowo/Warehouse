@@ -45,6 +45,11 @@ watch([perPage, gudangId, dateFrom, dateTo], reload);
 
 function changePerPage(n) { perPage.value = n; }
 
+function fmtRpNumber(v) {
+    if (v === null || v === undefined || v === '') return '0';
+    return Number(v).toLocaleString('id-ID');
+}
+
 function viewDetail(mutasi) {
     router.get(`/transaksi/${mutasi.id}`);
 }
@@ -193,7 +198,7 @@ function submitCancel() {
                                     <td>{{ item.gudang?.nama_gudang || '-' }}</td>
                                     <td><span class="badge bg-primary">{{ item.items_count }}</span></td>
                                     <td>{{ item.total_qty?.toLocaleString('id-ID') || 0 }}</td>
-                                    <td><strong>Rp {{ (item.total_value || 0).toLocaleString('id-ID') }}</strong></td>
+                                    <td><strong><span class="rupiah-format"><span class="rp">Rp</span><span class="amount">{{ fmtRpNumber(item.total_value) }}</span></span></strong></td>
                                     <td>{{ item.user?.name || '-' }}</td>
                                     <td>
                                         <button class="btn btn-sm btn-soft-info border-0 shadow-sm bx bx-show font-size-16"
@@ -279,3 +284,28 @@ function submitCancel() {
         </div>
     </div>
 </template>
+
+<style scoped>
+/* Pastikan semua input berbentuk kotak (tidak bulat) */
+.form-control,
+.form-select {
+    border-radius: 0.25rem !important;
+}
+
+.rupiah-format {
+    display: inline-flex;
+    justify-content: space-between;
+    width: 100%;
+    gap: 0.5rem;
+}
+
+.rupiah-format .rp {
+    text-align: left;
+    flex-shrink: 0;
+}
+
+.rupiah-format .amount {
+    text-align: right;
+    flex-grow: 1;
+}
+</style>
