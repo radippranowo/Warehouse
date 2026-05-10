@@ -28,10 +28,20 @@ class RoleController extends Controller
      */
     public function create()
     {
-        $permissions = Permission::orderBy('module')
+        $allPermissions = Permission::orderBy('module')
             ->orderBy('name')
-            ->get()
-            ->groupBy('module');
+            ->get();
+        
+        $permissions = $allPermissions->map(function ($permission) {
+            $humanName = Permission::humanReadableName($permission->name);
+            return [
+                'id' => $permission->id,
+                'name' => $permission->name,
+                'display_name' => $humanName,
+                'module' => $permission->module,
+                'description' => $permission->description,
+            ];
+        })->groupBy('module');
 
         return Inertia::render('Role/Create', [
             'permissions' => $permissions,
@@ -72,10 +82,25 @@ class RoleController extends Controller
      */
     public function edit(Role $role)
     {
-        $permissions = Permission::orderBy('module')
+        $role->load('permissions');
+        
+        $allPermissions = Permission::orderBy('module')
             ->orderBy('name')
-            ->get()
-            ->groupBy('module');
+            ->get();
+        
+        $permissions = $allPermissions->map(function ($permission) {
+            $humanName = Permission::humanReadableName($permission->name);
+            return [
+                'id' => $permission->id,
+                'name' => $permission->name,
+                'display_name' => $humanName,
+                'module' => $permission->module,
+                'description' => $permission->description,
+            ];
+        })->groupBy('module');
+
+        // Debug: uncomment to see the data
+        // dd($permissions->toArray());
 
         $rolePermissions = $role->permissions->pluck('id')->toArray();
 

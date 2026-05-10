@@ -45,6 +45,60 @@ const moduleNames = {
     'other': 'Lainnya',
 };
 
+// Function to convert permission name to human-readable format
+const getHumanReadableName = (name) => {
+    const actionMap = {
+        'view': 'Lihat',
+        'create': 'Tambah',
+        'edit': 'Edit',
+        'update': 'Update',
+        'delete': 'Hapus',
+        'restore': 'Pulihkan',
+        'force-delete': 'Hapus Permanen',
+        'export': 'Export',
+        'import': 'Import',
+        'print': 'Cetak',
+        'approve': 'Setujui',
+        'reject': 'Tolak',
+        'manage': 'Kelola',
+        'access': 'Akses',
+    };
+
+    const moduleMap = {
+        'dashboard': 'Dashboard',
+        'barang': 'Barang',
+        'category': 'Kategori',
+        'sub_category': 'Sub Kategori',
+        'merk': 'Merk',
+        'group': 'Group',
+        'gudang': 'Gudang',
+        'supplier': 'Supplier',
+        'mutasi': 'Mutasi',
+        'stok': 'Stok',
+        'laporan': 'Laporan',
+        'user': 'User',
+        'role': 'Role',
+        'permission': 'Permission',
+        'barang-masuk': 'Barang Masuk',
+        'barang-keluar': 'Barang Keluar',
+        'penyesuaian-stok': 'Penyesuaian Stok',
+    };
+
+    const parts = name.split('.');
+    
+    if (parts.length === 2) {
+        const [module, action] = parts;
+        const moduleText = moduleMap[module] || module.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        const actionText = actionMap[action] || action.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        return `${actionText} ${moduleText}`;
+    } else if (parts.length === 1) {
+        const action = parts[0];
+        return actionMap[action] || action.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+    
+    return name;
+};
+
 const toggleModule = (module) => {
     const modulePermissions = groupedPermissions.value[module].map(p => p.id);
     const allSelected = modulePermissions.every(id => form.permissions.includes(id));
@@ -188,7 +242,7 @@ const submit = () => {
                                                                     class="form-check-label" 
                                                                     :for="`permission-${permission.id}`"
                                                                 >
-                                                                    {{ permission.display_name }}
+                                                                    {{ getHumanReadableName(permission.name) }}
                                                                 </label>
                                                             </div>
                                                         </div>

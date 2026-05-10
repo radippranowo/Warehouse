@@ -177,22 +177,22 @@ onBeforeUnmount(() => {
                             </div>
                             <div class="dropdown-divider"></div>
                             <a class="dropdown-item" href="#">
-                                <i class="bx bx-user font-size-16 align-middle me-1"></i>Profile
+                                <i class="bx bx-user font-size-16 align-middle me-1"></i>Profil Saya
                             </a>
                             <a class="dropdown-item" href="#">
-                                <i class="bx bx-wallet font-size-16 align-middle me-1"></i>My Wallet
+                                <i class="bx bx-wallet font-size-16 align-middle me-1"></i>Dompet
                             </a>
                             <a class="dropdown-item d-block" href="#">
                                 <span class="badge bg-success float-end">11</span>
-                                <i class="bx bx-wrench font-size-16 align-middle me-1"></i>Settings
+                                <i class="bx bx-wrench font-size-16 align-middle me-1"></i>Pengaturan
                             </a>
                             <a class="dropdown-item" href="#">
-                                <i class="bx bx-lock-open font-size-16 align-middle me-1"></i>Lock screen
+                                <i class="bx bx-lock-open font-size-16 align-middle me-1"></i>Kunci Layar
                             </a>
                             <div class="dropdown-divider"></div>
                             <a class="dropdown-item text-danger" href="#"
                                 onclick="event.preventDefault();document.getElementById('logout-form').submit();">
-                                <i class="bx bx-power-off font-size-16 align-middle me-1 text-danger"></i>Logout
+                                <i class="bx bx-power-off font-size-16 align-middle me-1 text-danger"></i>Keluar
                             </a>
                         </div>
                     </div>
