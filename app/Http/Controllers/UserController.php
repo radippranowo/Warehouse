@@ -80,7 +80,7 @@ class UserController extends Controller
             'password' => ['required', 'confirmed', Password::min(8)],
             'role_id' => ['required', 'exists:roles,id'],
             'is_active' => ['boolean'],
-        ]);
+        ], $this->validationMessages(), $this->validationAttributes());
 
         $validated['password'] = Hash::make($validated['password']);
 
@@ -116,7 +116,7 @@ class UserController extends Controller
             'password' => ['nullable', 'confirmed', Password::min(8)],
             'role_id' => ['required', 'exists:roles,id'],
             'is_active' => ['boolean'],
-        ]);
+        ], $this->validationMessages(), $this->validationAttributes());
 
         if (empty($validated['password'])) {
             unset($validated['password']);
@@ -173,5 +173,50 @@ class UserController extends Controller
         $status = $user->is_active ? 'diaktifkan' : 'dinonaktifkan';
 
         return back()->with('success', "User berhasil {$status}");
+    }
+
+    /**
+     * Custom Indonesian validation messages.
+     */
+    protected function validationMessages(): array
+    {
+        return [
+            'name.required'      => 'Nama lengkap wajib diisi.',
+            'name.string'        => 'Nama lengkap harus berupa teks.',
+            'name.max'           => 'Nama lengkap maksimal :max karakter.',
+
+            'email.required'     => 'Email wajib diisi.',
+            'email.email'        => 'Format email tidak valid (contoh: nama@example.com).',
+            'email.max'          => 'Email maksimal :max karakter.',
+            'email.unique'       => 'Email ini sudah terdaftar, gunakan email lain.',
+
+            'password.required'  => 'Password wajib diisi.',
+            'password.confirmed' => 'Konfirmasi password tidak cocok.',
+            'password.min'       => 'Password minimal :min karakter.',
+            'password.letters'   => 'Password harus mengandung minimal satu huruf.',
+            'password.mixed'     => 'Password harus mengandung huruf besar dan kecil.',
+            'password.numbers'   => 'Password harus mengandung minimal satu angka.',
+            'password.symbols'   => 'Password harus mengandung minimal satu simbol.',
+            'password.uncompromised' => 'Password ini terdeteksi pernah bocor, gunakan password lain.',
+
+            'role_id.required'   => 'Role wajib dipilih.',
+            'role_id.exists'     => 'Role yang dipilih tidak valid.',
+
+            'is_active.boolean'  => 'Status harus berupa Aktif atau Nonaktif.',
+        ];
+    }
+
+    /**
+     * Custom field attribute names (digunakan saat field disebut di pesan default).
+     */
+    protected function validationAttributes(): array
+    {
+        return [
+            'name'      => 'Nama lengkap',
+            'email'     => 'Email',
+            'password'  => 'Password',
+            'role_id'   => 'Role',
+            'is_active' => 'Status',
+        ];
     }
 }

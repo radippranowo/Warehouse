@@ -55,7 +55,7 @@ function submit() {
             <div class="col-lg-8">
                 <div class="card shadow-sm">
                     <div class="card-body">
-                        <form @submit.prevent="submit">
+                        <form @submit.prevent="submit" novalidate>
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label for="name" class="form-label fw-medium">

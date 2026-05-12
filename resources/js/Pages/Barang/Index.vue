@@ -5,6 +5,9 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
 import Modal from '@/Components/Modal.vue';
 import SearchSelect from '@/Components/SearchSelect.vue';
+import { usePartialReloadLoading } from '@/composables/usePartialReloadLoading';
+
+const { loading } = usePartialReloadLoading('/barang');
 
 const props = defineProps({
     barangs: { type: Object, required: true },
@@ -43,6 +46,7 @@ const displayBarangs = computed(() => ({
 // --- search & perPage (URL-synced, debounced) -----------------------------
 const search = ref(props.filters.search ?? '');
 const perPage = ref(props.filters.perPage ?? 25);
+const skeletonRows = computed(() => Math.min(Number(perPage.value) || 10, 10));
 let searchTimer = null;
 
 function reload(extra = {}) {
@@ -55,7 +59,7 @@ function reload(extra = {}) {
 
 watch(search, () => {
     clearTimeout(searchTimer);
-    searchTimer = setTimeout(reload, 300);
+    searchTimer = setTimeout(reload, 400);
 });
 
 function changePerPage(n) {
@@ -332,7 +336,7 @@ function fmtRp(v) {
                 <div class="card-body">
                     <div class="row g-2 mb-3">
                         <div class="col-lg-4 col-md-6">
-                            <label class="form-label mb-1 small fw-medium">Pencarian</label>
+                            <label for="search_barang" class="form-label mb-1 small fw-medium">Pencarian</label>
                             <div class="search-box">
                                 <div class="position-relative">
                                     <input
@@ -343,7 +347,8 @@ function fmtRp(v) {
                                         class="form-control"
                                         placeholder="Cari kode / nama / part number..."
                                         style="padding-left: 36px; height: 38px;"
-                                        aria-label="Cari barang"
+                                        autocomplete="off"
+                                        aria-label="Cari kode, nama, atau part number barang"
                                     >
                                     <i class="bx bx-search-alt search-icon" style="left: 12px; font-size: 18px;"></i>
                                 </div>
@@ -365,10 +370,13 @@ function fmtRp(v) {
                                 <tr>
                                     <th style="width: 36px;">
                                         <input
+                                            id="select_all_barang"
+                                            name="select_all"
                                             type="checkbox"
                                             class="form-check-input"
                                             :checked="allSelected"
                                             :indeterminate.prop="someSelected"
+                                            aria-label="Pilih semua barang"
                                             @change="toggleAll"
                                         >
                                     </th>
@@ -387,12 +395,33 @@ function fmtRp(v) {
                                 </tr>
                             </thead>
                             <TransitionGroup tag="tbody" :name="animateRows ? 'row-fade' : ''">
-                                <tr v-for="(item, i) in displayBarangs.data" :key="item.id" :class="{ 'table-active': selected.has(item.id) }">
+                                <tr v-if="loading" v-for="n in skeletonRows" :key="`skel-${n}`" class="skeleton-row">
+                                    <td><span class="skel skel-sm" style="width: 18px; height: 18px;"></span></td>
+                                    <td><span class="skel skel-sm" style="width: 20px;"></span></td>
+                                    <td><span class="skel" style="width: 80px;"></span></td>
+                                    <td><span class="skel" style="width: 80px;"></span></td>
+                                    <td><span class="skel" style="width: 160px;"></span></td>
+                                    <td><span class="skel" style="width: 90px;"></span></td>
+                                    <td><span class="skel" style="width: 90px;"></span></td>
+                                    <td><span class="skel" style="width: 70px;"></span></td>
+                                    <td><span class="skel" style="width: 70px;"></span></td>
+                                    <td><span class="skel skel-sm" style="width: 40px;"></span></td>
+                                    <td><span class="skel skel-pill" style="width: 40px;"></span></td>
+                                    <td><span class="skel" style="width: 70px;"></span></td>
+                                    <td>
+                                        <span class="skel skel-sm" style="width: 28px; height: 28px; border-radius: 4px;"></span>
+                                        <span class="skel skel-sm ms-1" style="width: 28px; height: 28px; border-radius: 4px;"></span>
+                                    </td>
+                                </tr>
+                                <tr v-else v-for="(item, i) in displayBarangs.data" :key="item.id" :class="{ 'table-active': selected.has(item.id) }">
                                     <td>
                                         <input
+                                            :id="`select_barang_${item.id}`"
+                                            name="select_barang"
                                             type="checkbox"
                                             class="form-check-input"
                                             :checked="selected.has(item.id)"
+                                            :aria-label="`Pilih ${item.nama_barang}`"
                                             @change="toggleOne(item.id)"
                                         >
                                     </td>
@@ -438,7 +467,7 @@ function fmtRp(v) {
                             <small class="text-muted">
                                 Menampilkan {{ displayBarangs.from ?? 0 }}–{{ displayBarangs.to ?? 0 }} dari {{ displayBarangs.total }}
                             </small>
-                            <select v-model="perPage" @change="changePerPage(perPage)" class="form-select form-select-sm" style="width: 70px;">
+                            <select id="per_page_barang" name="per_page" v-model="perPage" @change="changePerPage(perPage)" class="form-select form-select-sm" style="width: 70px;" aria-label="Jumlah data per halaman">
                                 <option :value="10">10</option>
                                 <option :value="25">25</option>
                                 <option :value="50">50</option>

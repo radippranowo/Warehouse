@@ -125,6 +125,10 @@ function submit() {
                             <tr v-for="(row, idx) in form.items" :key="row._key">
                                 <td class="position-relative">
                                     <input type="text" v-model="row.kode_barang"
+                                        :id="`row_${idx}_kode_barang`"
+                                        :name="`items[${idx}][kode_barang]`"
+                                        autocomplete="off"
+                                        aria-label="Kode barang"
                                         class="form-control form-control-sm"
                                         :class="{ 'is-invalid': rowError(idx, 'kode_barang') }">
                                     <div v-if="rowError(idx, 'kode_barang')" class="invalid-feedback-absolute">
@@ -133,6 +137,10 @@ function submit() {
                                 </td>
                                 <td class="position-relative">
                                     <input type="text" v-model="row.part_number"
+                                        :id="`row_${idx}_part_number`"
+                                        :name="`items[${idx}][part_number]`"
+                                        autocomplete="off"
+                                        aria-label="Part number"
                                         class="form-control form-control-sm"
                                         :class="{ 'is-invalid': rowError(idx, 'part_number') }">
                                     <div v-if="rowError(idx, 'part_number')" class="invalid-feedback-absolute">
@@ -141,6 +149,10 @@ function submit() {
                                 </td>
                                 <td class="position-relative">
                                     <input type="text" v-model="row.nama_barang"
+                                        :id="`row_${idx}_nama_barang`"
+                                        :name="`items[${idx}][nama_barang]`"
+                                        autocomplete="off"
+                                        aria-label="Nama barang"
                                         class="form-control form-control-sm"
                                         :class="{ 'is-invalid': rowError(idx, 'nama_barang') }">
                                     <div v-if="rowError(idx, 'nama_barang')" class="invalid-feedback-absolute">
@@ -201,14 +213,26 @@ function submit() {
                                 </td>
                                 <td class="position-relative">
                                     <input type="text" v-model="row.satuan"
+                                        :id="`row_${idx}_satuan`"
+                                        :name="`items[${idx}][satuan]`"
+                                        autocomplete="off"
+                                        aria-label="Satuan"
                                         class="form-control form-control-sm text-center">
                                 </td>
                                 <td class="position-relative">
                                     <input type="number" v-model.number="row.harga_beli"
+                                        :id="`row_${idx}_harga_beli`"
+                                        :name="`items[${idx}][harga_beli]`"
+                                        autocomplete="off"
+                                        aria-label="Harga beli"
                                         class="form-control form-control-sm text-center">
                                 </td>
                                 <td class="position-relative">
                                     <input type="number" v-model.number="row.harga_jual"
+                                        :id="`row_${idx}_harga_jual`"
+                                        :name="`items[${idx}][harga_jual]`"
+                                        autocomplete="off"
+                                        aria-label="Harga jual"
                                         class="form-control form-control-sm text-center">
                                 </td>
                                 <td class="position-relative text-center">

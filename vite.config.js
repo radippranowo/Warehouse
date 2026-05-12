@@ -23,4 +23,18 @@ export default defineConfig({
             '@': path.resolve(__dirname, 'resources/js'),
         },
     },
+    build: {
+        chunkSizeWarningLimit: 700,
+        rolldownOptions: {
+            output: {
+                // Split vendor & framework dari kode aplikasi supaya cache lebih efisien.
+                manualChunks(id) {
+                    if (!id.includes('node_modules')) return;
+                    if (/[\\/]node_modules[\\/](@vue|vue)[\\/]/.test(id)) return 'vue';
+                    if (/[\\/]node_modules[\\/]@inertiajs[\\/]/.test(id)) return 'inertia';
+                    return 'vendor';
+                },
+            },
+        },
+    },
 });

@@ -105,7 +105,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/barang/{barang}', [BarangController::class, 'destroy'])->name('barang.destroy');
         Route::delete('/barang/bulk', [BarangController::class, 'bulkDestroy'])->name('barang.bulk-destroy');
     });
-    Route::middleware('throttle:10,1')->group(function () {
+    Route::middleware('throttle:30,1')->group(function () {
         Route::post('/barang/import', [BarangController::class, 'processImport'])->name('barang.import.process');
         Route::post('/barang/clear', [BarangController::class, 'clearAll'])->name('barang.clear');
     });
@@ -147,7 +147,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/stok', [StokController::class, 'index'])->name('stok.index');
         Route::get('/stok/{barang}', [StokController::class, 'show'])->name('stok.show');
     });
-    Route::middleware('throttle:10,1')->group(function () {
+    Route::middleware('throttle:30,1')->group(function () {
         Route::post('/stok/import', [ImportStokController::class, 'processImport'])->name('stok.import.process');
         Route::post('/stok/clear', [ImportStokController::class, 'clearStok'])->name('stok.clear');
         Route::get('/stok/export', function () {

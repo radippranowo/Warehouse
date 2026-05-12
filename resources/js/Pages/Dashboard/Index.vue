@@ -1,12 +1,26 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { computed } from 'vue';
+import { Link, usePage } from '@inertiajs/vue3';
 
 const props = defineProps({
     stats: { type: Object, required: true },
 });
 
 defineOptions({ layout: AppLayout });
+
+const page = usePage();
+const userName = computed(() => page.props.auth?.user?.name || 'User');
+
+const greeting = computed(() => {
+    const h = new Date().getHours();
+    if (h < 11) return 'Selamat Pagi';
+    if (h < 15) return 'Selamat Siang';
+    if (h < 18) return 'Selamat Sore';
+    return 'Selamat Malam';
+});
+
+const stokKritisCount = computed(() => (props.stats.stok_kosong || 0) + (props.stats.stok_rendah || 0));
 
 function fmtRpNumber(v) {
     if (v === null || v === undefined || v === '') return '0';
@@ -65,12 +79,12 @@ const stokPercentage = computed(() => {
 <template>
     <div class="container-fluid">
         <!-- Header -->
-        <div class="row mb-4">
+        <div class="row mb-3">
             <div class="col-12">
-                <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                     <div>
-                        <h4 class="mb-1 fw-bold">Dashboard</h4>
-                        <p class="text-muted small mb-0">Selamat datang di Sistem Manajemen Gudang</p>
+                        <h4 class="mb-1 fw-bold">{{ greeting }}, {{ userName }} 👋</h4>
+                        <p class="text-muted small mb-0">Ringkasan aktivitas gudang Anda hari ini</p>
                     </div>
                     <div class="text-end">
                         <small class="text-muted">{{ new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) }}</small>
@@ -79,181 +93,202 @@ const stokPercentage = computed(() => {
             </div>
         </div>
 
-        <!-- Stats Cards Row 1 - Master Data -->
-        <div class="row g-4 mb-4">
-            <div class="col-xl-2 col-md-4 col-sm-6">
-                <div class="card border-0 shadow-sm h-100 card-hover">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <div class="avatar-sm rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center">
-                                    <i class="bx bxs-package text-primary fs-4"></i>
-                                </div>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class="text-muted mb-1 small">Total Barang</p>
-                                <h4 class="mb-0 fw-bold">{{ fmtNumber(stats.barang) }}</h4>
-                            </div>
+        <!-- Alert Stok Kritis -->
+        <div v-if="stokKritisCount > 0" class="row mb-4">
+            <div class="col-12">
+                <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+                    <div class="d-flex align-items-center">
+                        <i class="bx bxs-error-circle fs-3 text-warning me-3"></i>
+                        <div>
+                            <strong>Perhatian!</strong>
+                            Terdapat <span class="fw-bold text-danger">{{ fmtNumber(stats.stok_kosong) }}</span> SKU stok kosong
+                            dan <span class="fw-bold text-warning">{{ fmtNumber(stats.stok_rendah) }}</span> SKU stok rendah.
                         </div>
                     </div>
-                </div>
-            </div>
-            <div class="col-xl-2 col-md-4 col-sm-6">
-                <div class="card border-0 shadow-sm h-100 card-hover">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <div class="avatar-sm rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center">
-                                    <i class="bx bxs-grid-alt text-success fs-4"></i>
-                                </div>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class="text-muted mb-1 small">Kategori</p>
-                                <h4 class="mb-0 fw-bold">{{ fmtNumber(stats.category) }}</h4>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-xl-2 col-md-4 col-sm-6">
-                <div class="card border-0 shadow-sm h-100 card-hover">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <div class="avatar-sm rounded-circle bg-warning bg-opacity-10 d-flex align-items-center justify-content-center">
-                                    <i class="bx bxs-bookmark-star text-warning fs-4"></i>
-                                </div>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class="text-muted mb-1 small">Merk</p>
-                                <h4 class="mb-0 fw-bold">{{ fmtNumber(stats.merk) }}</h4>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-xl-2 col-md-4 col-sm-6">
-                <div class="card border-0 shadow-sm h-100 card-hover">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <div class="avatar-sm rounded-circle bg-info bg-opacity-10 d-flex align-items-center justify-content-center">
-                                    <i class="bx bxs-collection text-info fs-4"></i>
-                                </div>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class="text-muted mb-1 small">Group</p>
-                                <h4 class="mb-0 fw-bold">{{ fmtNumber(stats.group) }}</h4>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-xl-2 col-md-4 col-sm-6">
-                <div class="card border-0 shadow-sm h-100 card-hover">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <div class="avatar-sm rounded-circle bg-danger bg-opacity-10 d-flex align-items-center justify-content-center">
-                                    <i class="bx bxs-store-alt text-danger fs-4"></i>
-                                </div>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class="text-muted mb-1 small">Gudang</p>
-                                <h4 class="mb-0 fw-bold">{{ fmtNumber(stats.gudang) }}</h4>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-xl-2 col-md-4 col-sm-6">
-                <div class="card border-0 shadow-sm h-100 card-hover">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <div class="avatar-sm rounded-circle bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center">
-                                    <i class="bx bxs-user-circle text-secondary fs-4"></i>
-                                </div>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class="text-muted mb-1 small">Supplier</p>
-                                <h4 class="mb-0 fw-bold">{{ fmtNumber(stats.supplier) }}</h4>
-                            </div>
-                        </div>
-                    </div>
+                    <Link :href="route('stok.index', { low_only: 1 })" class="btn btn-warning btn-sm fw-semibold">
+                        <i class="bx bx-right-arrow-alt me-1"></i> Lihat Daftar
+                    </Link>
                 </div>
             </div>
         </div>
 
-        <!-- Stats Cards Row 2 - Stok -->
-        <div class="row g-4 mb-4">
-            <div class="col-xl-3 col-md-6">
-                <div class="card border-0 shadow-sm h-100 card-hover">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <div class="avatar-sm rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center">
-                                    <i class="bx bx-box text-primary fs-4"></i>
+
+        <!-- Stats Cards Row 1 - Master Data -->
+        <div class="row g-3 mb-4">
+            <div class="col-xl-2 col-md-4 col-sm-6">
+                <Link :href="route('barang.index')" class="text-decoration-none">
+                    <div class="card border-0 shadow-sm h-100 card-hover stat-card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0">
+                                    <i class="bx bxs-package text-primary fs-4"></i>
                                 </div>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class="text-muted mb-1 small">Total SKU</p>
-                                <h4 class="mb-0 fw-bold">{{ fmtNumber(stats.stok_total_sku) }}</h4>
-                                <small class="text-muted">{{ fmtNumber(stats.stok_total) }} unit</small>
+                                <div class="flex-grow-1 ms-3">
+                                    <p class="text-muted mb-1 small">Total Barang</p>
+                                    <h4 class="mb-0 fw-bold text-dark">{{ fmtNumber(stats.barang) }}</h4>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                </Link>
             </div>
-            <div class="col-xl-3 col-md-6">
-                <div class="card border-0 shadow-sm h-100 card-hover">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <div class="avatar-sm rounded-circle bg-danger bg-opacity-10 d-flex align-items-center justify-content-center">
-                                    <i class="bx bx-error-circle text-danger fs-4"></i>
+            <div class="col-xl-2 col-md-4 col-sm-6">
+                <Link :href="route('category.index')" class="text-decoration-none">
+                    <div class="card border-0 shadow-sm h-100 card-hover stat-card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0">
+                                    <i class="bx bxs-grid-alt text-success fs-4"></i>
                                 </div>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class="text-muted mb-1 small">Stok Kosong</p>
-                                <h4 class="mb-0 fw-bold text-danger">{{ fmtNumber(stats.stok_kosong) }}</h4>
-                                <small class="text-muted">{{ stokPercentage.kosong.toFixed(1) }}% dari total</small>
+                                <div class="flex-grow-1 ms-3">
+                                    <p class="text-muted mb-1 small">Kategori</p>
+                                    <h4 class="mb-0 fw-bold text-dark">{{ fmtNumber(stats.category) }}</h4>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                </Link>
             </div>
-            <div class="col-xl-3 col-md-6">
-                <div class="card border-0 shadow-sm h-100 card-hover">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <div class="avatar-sm rounded-circle bg-warning bg-opacity-10 d-flex align-items-center justify-content-center">
-                                    <i class="bx bx-error text-warning fs-4"></i>
+            <div class="col-xl-2 col-md-4 col-sm-6">
+                <Link :href="route('merk.index')" class="text-decoration-none">
+                    <div class="card border-0 shadow-sm h-100 card-hover stat-card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm rounded-circle bg-warning bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0">
+                                    <i class="bx bxs-bookmark-star text-warning fs-4"></i>
                                 </div>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class="text-muted mb-1 small">Stok Rendah</p>
-                                <h4 class="mb-0 fw-bold text-warning">{{ fmtNumber(stats.stok_rendah) }}</h4>
-                                <small class="text-muted">{{ stokPercentage.rendah.toFixed(1) }}% dari total</small>
+                                <div class="flex-grow-1 ms-3">
+                                    <p class="text-muted mb-1 small">Merk</p>
+                                    <h4 class="mb-0 fw-bold text-dark">{{ fmtNumber(stats.merk) }}</h4>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                </Link>
             </div>
-            <div class="col-xl-3 col-md-6">
-                <div class="card border-0 shadow-sm h-100 card-hover">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <div class="avatar-sm rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center">
-                                    <i class="bx bx-check-circle text-success fs-4"></i>
+            <div class="col-xl-2 col-md-4 col-sm-6">
+                <Link :href="route('group.index')" class="text-decoration-none">
+                    <div class="card border-0 shadow-sm h-100 card-hover stat-card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm rounded-circle bg-info bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0">
+                                    <i class="bx bxs-collection text-info fs-4"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <p class="text-muted mb-1 small">Group</p>
+                                    <h4 class="mb-0 fw-bold text-dark">{{ fmtNumber(stats.group) }}</h4>
                                 </div>
                             </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class="text-muted mb-1 small">Stok Aman</p>
-                                <h4 class="mb-0 fw-bold text-success">{{ fmtNumber(stats.stok_total_sku - stats.stok_kosong - stats.stok_rendah) }}</h4>
-                                <small class="text-muted">{{ stokPercentage.aman.toFixed(1) }}% dari total</small>
+                        </div>
+                    </div>
+                </Link>
+            </div>
+            <div class="col-xl-2 col-md-4 col-sm-6">
+                <Link :href="route('gudang.index')" class="text-decoration-none">
+                    <div class="card border-0 shadow-sm h-100 card-hover stat-card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm rounded-circle bg-danger bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0">
+                                    <i class="bx bxs-store-alt text-danger fs-4"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <p class="text-muted mb-1 small">Gudang</p>
+                                    <h4 class="mb-0 fw-bold text-dark">{{ fmtNumber(stats.gudang) }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </Link>
+            </div>
+            <div class="col-xl-2 col-md-4 col-sm-6">
+                <Link :href="route('supplier.index')" class="text-decoration-none">
+                    <div class="card border-0 shadow-sm h-100 card-hover stat-card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm rounded-circle bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0">
+                                    <i class="bx bxs-user-circle text-secondary fs-4"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <p class="text-muted mb-1 small">Supplier</p>
+                                    <h4 class="mb-0 fw-bold text-dark">{{ fmtNumber(stats.supplier) }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </Link>
+            </div>
+        </div>
+
+        <!-- Stok Overview - Single Visual Bar -->
+        <div class="row g-3 mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                            <div>
+                                <h6 class="mb-1 fw-bold">
+                                    <i class="bx bx-box text-primary me-2"></i>Ringkasan Stok
+                                </h6>
+                                <small class="text-muted">
+                                    Total <strong>{{ fmtNumber(stats.stok_total_sku) }}</strong> SKU
+                                    ({{ fmtNumber(stats.stok_total) }} unit)
+                                </small>
+                            </div>
+                            <Link :href="route('stok.index')" class="btn btn-sm btn-outline-primary">
+                                Detail Stok <i class="bx bx-right-arrow-alt"></i>
+                            </Link>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div class="progress stok-progress mb-3" style="height: 24px; border-radius: 12px; overflow: hidden;">
+                            <div class="progress-bar bg-success" role="progressbar"
+                                :style="{ width: stokPercentage.aman + '%' }"
+                                :title="`Aman: ${fmtNumber(stats.stok_total_sku - stats.stok_kosong - stats.stok_rendah)} SKU`">
+                                <span v-if="stokPercentage.aman > 8" class="fw-semibold">{{ stokPercentage.aman.toFixed(0) }}%</span>
+                            </div>
+                            <div class="progress-bar bg-warning" role="progressbar"
+                                :style="{ width: stokPercentage.rendah + '%' }"
+                                :title="`Rendah: ${fmtNumber(stats.stok_rendah)} SKU`">
+                                <span v-if="stokPercentage.rendah > 8" class="fw-semibold">{{ stokPercentage.rendah.toFixed(0) }}%</span>
+                            </div>
+                            <div class="progress-bar bg-danger" role="progressbar"
+                                :style="{ width: stokPercentage.kosong + '%' }"
+                                :title="`Kosong: ${fmtNumber(stats.stok_kosong)} SKU`">
+                                <span v-if="stokPercentage.kosong > 8" class="fw-semibold">{{ stokPercentage.kosong.toFixed(0) }}%</span>
+                            </div>
+                        </div>
+
+                        <!-- Legend -->
+                        <div class="row g-2 text-center">
+                            <div class="col-md-4">
+                                <Link :href="route('stok.index')" class="text-decoration-none">
+                                    <div class="d-flex align-items-center justify-content-center gap-2 p-2 rounded stok-legend">
+                                        <span class="legend-dot bg-success"></span>
+                                        <span class="text-muted small">Aman:</span>
+                                        <strong class="text-success">{{ fmtNumber(stats.stok_total_sku - stats.stok_kosong - stats.stok_rendah) }}</strong>
+                                        <small class="text-muted">SKU</small>
+                                    </div>
+                                </Link>
+                            </div>
+                            <div class="col-md-4">
+                                <Link :href="route('stok.index', { low_only: 1 })" class="text-decoration-none">
+                                    <div class="d-flex align-items-center justify-content-center gap-2 p-2 rounded stok-legend">
+                                        <span class="legend-dot bg-warning"></span>
+                                        <span class="text-muted small">Rendah:</span>
+                                        <strong class="text-warning">{{ fmtNumber(stats.stok_rendah) }}</strong>
+                                        <small class="text-muted">SKU</small>
+                                    </div>
+                                </Link>
+                            </div>
+                            <div class="col-md-4">
+                                <Link :href="route('stok.index', { low_only: 1 })" class="text-decoration-none">
+                                    <div class="d-flex align-items-center justify-content-center gap-2 p-2 rounded stok-legend">
+                                        <span class="legend-dot bg-danger"></span>
+                                        <span class="text-muted small">Kosong:</span>
+                                        <strong class="text-danger">{{ fmtNumber(stats.stok_kosong) }}</strong>
+                                        <small class="text-muted">SKU</small>
+                                    </div>
+                                </Link>
                             </div>
                         </div>
                     </div>
@@ -262,58 +297,82 @@ const stokPercentage = computed(() => {
         </div>
 
         <!-- Stats Cards Row 3 - Transaksi Bulan Ini -->
-        <div class="row g-4 mb-4">
+        <div class="row g-3 mb-4">
             <div class="col-xl-3 col-md-6">
-                <div class="card shadow-sm h-100 card-hover border-start border-4 border-primary">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <h6 class="mb-0 text-muted">Transaksi Hari Ini</h6>
-                            <i class="bx bx-calendar-event text-primary fs-4"></i>
+                <Link :href="route('riwayat.semua')" class="text-decoration-none">
+                    <div class="card border-0 shadow-sm h-100 card-hover stat-card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0">
+                                    <i class="bx bx-calendar-event text-primary fs-4"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <p class="text-muted mb-1 small">Transaksi Hari Ini</p>
+                                    <h4 class="mb-0 fw-bold text-dark">{{ fmtNumber(stats.transaksi_hari_ini) }}</h4>
+                                    <small class="text-muted">Semua tipe transaksi</small>
+                                </div>
+                            </div>
                         </div>
-                        <h3 class="mb-0 fw-bold">{{ fmtNumber(stats.transaksi_hari_ini) }}</h3>
-                        <small class="text-muted">Semua tipe transaksi</small>
                     </div>
-                </div>
+                </Link>
             </div>
             <div class="col-xl-3 col-md-6">
-                <div class="card shadow-sm h-100 card-hover border-start border-4 border-success">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <h6 class="mb-0 text-muted">Barang Masuk (Bulan Ini)</h6>
-                            <i class="bx bx-import text-success fs-4"></i>
+                <Link :href="route('riwayat.barang-masuk')" class="text-decoration-none">
+                    <div class="card border-0 shadow-sm h-100 card-hover stat-card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0">
+                                    <i class="bx bx-import text-success fs-4"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <p class="text-muted mb-1 small">Barang Masuk (Bulan Ini)</p>
+                                    <h4 class="mb-0 fw-bold text-dark">{{ fmtNumber(stats.transaksi_masuk_bulan_ini) }}</h4>
+                                    <small class="text-muted">
+                                        <span class="rupiah-inline"><span class="rp">Rp</span> {{ fmtRpNumber(stats.nilai_masuk_bulan_ini) }}</span>
+                                    </small>
+                                </div>
+                            </div>
                         </div>
-                        <h3 class="mb-0 fw-bold text-success">{{ fmtNumber(stats.transaksi_masuk_bulan_ini) }}</h3>
-                        <small class="text-muted">
-                            <span class="rupiah-inline"><span class="rp">Rp</span> {{ fmtRpNumber(stats.nilai_masuk_bulan_ini) }}</span>
-                        </small>
                     </div>
-                </div>
+                </Link>
             </div>
             <div class="col-xl-3 col-md-6">
-                <div class="card shadow-sm h-100 card-hover border-start border-4 border-danger">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <h6 class="mb-0 text-muted">Barang Keluar (Bulan Ini)</h6>
-                            <i class="bx bx-export text-danger fs-4"></i>
+                <Link :href="route('riwayat.barang-keluar')" class="text-decoration-none">
+                    <div class="card border-0 shadow-sm h-100 card-hover stat-card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm rounded-circle bg-danger bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0">
+                                    <i class="bx bx-export text-danger fs-4"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <p class="text-muted mb-1 small">Barang Keluar (Bulan Ini)</p>
+                                    <h4 class="mb-0 fw-bold text-dark">{{ fmtNumber(stats.transaksi_keluar_bulan_ini) }}</h4>
+                                    <small class="text-muted">
+                                        <span class="rupiah-inline"><span class="rp">Rp</span> {{ fmtRpNumber(stats.nilai_keluar_bulan_ini) }}</span>
+                                    </small>
+                                </div>
+                            </div>
                         </div>
-                        <h3 class="mb-0 fw-bold text-danger">{{ fmtNumber(stats.transaksi_keluar_bulan_ini) }}</h3>
-                        <small class="text-muted">
-                            <span class="rupiah-inline"><span class="rp">Rp</span> {{ fmtRpNumber(stats.nilai_keluar_bulan_ini) }}</span>
-                        </small>
                     </div>
-                </div>
+                </Link>
             </div>
             <div class="col-xl-3 col-md-6">
-                <div class="card shadow-sm h-100 card-hover border-start border-4 border-info">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <h6 class="mb-0 text-muted">Transfer (Bulan Ini)</h6>
-                            <i class="bx bx-transfer text-info fs-4"></i>
+                <Link :href="route('riwayat.transfer')" class="text-decoration-none">
+                    <div class="card border-0 shadow-sm h-100 card-hover stat-card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm rounded-circle bg-info bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0">
+                                    <i class="bx bx-transfer text-info fs-4"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <p class="text-muted mb-1 small">Transfer (Bulan Ini)</p>
+                                    <h4 class="mb-0 fw-bold text-dark">{{ fmtNumber(stats.transaksi_transfer_bulan_ini) }}</h4>
+                                    <small class="text-muted">Antar gudang</small>
+                                </div>
+                            </div>
                         </div>
-                        <h3 class="mb-0 fw-bold text-info">{{ fmtNumber(stats.transaksi_transfer_bulan_ini) }}</h3>
-                        <small class="text-muted">Antar gudang</small>
                     </div>
-                </div>
+                </Link>
             </div>
         </div>
 
@@ -353,8 +412,11 @@ const stokPercentage = computed(() => {
                             </div>
                         </div>
                         <div v-else class="text-center py-5 text-muted">
-                            <i class="bx bx-info-circle fs-1 d-block mb-2"></i>
-                            <p class="mb-0">Belum ada data barang keluar</p>
+                            <i class="bx bx-package fs-1 d-block mb-2 opacity-50"></i>
+                            <p class="mb-2">Belum ada data barang keluar minggu ini</p>
+                            <Link :href="route('barang-keluar.form')" class="btn btn-sm btn-outline-danger">
+                                <i class="bx bx-plus me-1"></i>Buat Barang Keluar
+                            </Link>
                         </div>
                     </div>
                 </div>
@@ -403,8 +465,11 @@ const stokPercentage = computed(() => {
                             </div>
                         </div>
                         <div v-else class="text-center py-5 text-muted">
-                            <i class="bx bx-info-circle fs-1 d-block mb-2"></i>
-                            <p class="mb-0">Belum ada aktivitas</p>
+                            <i class="bx bx-time-five fs-1 d-block mb-2 opacity-50"></i>
+                            <p class="mb-2">Belum ada aktivitas tercatat</p>
+                            <Link :href="route('barang-masuk.form')" class="btn btn-sm btn-outline-primary">
+                                <i class="bx bx-plus me-1"></i>Mulai Transaksi
+                            </Link>
                         </div>
                     </div>
                 </div>
@@ -493,5 +558,72 @@ small.text-muted {
 .card-header {
     padding: 1.25rem 1.5rem;
     border-radius: 12px 12px 0 0 !important;
+}
+
+/* Quick Action buttons */
+.quick-action {
+    padding: 0.85rem 0.5rem;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+    border-width: 1.5px;
+}
+
+.quick-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+}
+
+.quick-action i {
+    transition: transform 0.2s ease;
+}
+
+.quick-action:hover i {
+    transform: scale(1.15);
+}
+
+/* Stat card link reset */
+a.text-decoration-none .stat-card {
+    cursor: pointer;
+}
+
+a.text-decoration-none:hover .stat-card {
+    transform: translateY(-4px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Stok progress bar */
+.stok-progress {
+    background-color: #f1f3f5;
+}
+
+.stok-progress .progress-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    transition: width 0.6s ease;
+}
+
+.legend-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.stok-legend {
+    transition: background-color 0.2s;
+}
+
+.stok-legend:hover {
+    background-color: #f8f9fa;
+}
+
+/* Alert styling */
+.alert-warning {
+    background-color: #fff8e1;
+    color: #856404;
+    border-left: 4px solid #ffc107 !important;
+    border-radius: 10px;
 }
 </style>

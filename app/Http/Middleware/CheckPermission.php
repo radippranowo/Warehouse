@@ -23,12 +23,12 @@ class CheckPermission
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        // Admin bypass all permission checks
+        // Admin = super-admin, selalu lolos. Permission admin dikunci penuh
+        // di RoleController::update + UI Role/Edit (checkbox disabled).
         if ($user->isAdmin()) {
             return $next($request);
         }
 
-        // Check if user has permission
         if (!$user->hasPermission($permission)) {
             abort(403, 'Anda tidak memiliki akses ke halaman ini.');
         }

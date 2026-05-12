@@ -56,11 +56,11 @@ class RoleController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:roles', 'alpha_dash'],
             'display_name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
+            'description' => ['nullable', 'string', 'max:1000'],
             'is_active' => ['boolean'],
             'permissions' => ['array'],
             'permissions.*' => ['exists:permissions,id'],
-        ]);
+        ], $this->validationMessages(), $this->validationAttributes());
 
         $role = Role::create([
             'name' => $validated['name'],
@@ -119,20 +119,28 @@ class RoleController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'alpha_dash', 'unique:roles,name,' . $role->id],
             'display_name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
+            'description' => ['nullable', 'string', 'max:1000'],
             'is_active' => ['boolean'],
             'permissions' => ['array'],
             'permissions.*' => ['exists:permissions,id'],
-        ]);
+        ], $this->validationMessages(), $this->validationAttributes());
+
+        // Role admin: nama "admin" tidak boleh diubah dan permissions dipaksa lengkap.
+        $isAdmin = $role->name === 'admin';
 
         $role->update([
-            'name' => $validated['name'],
+            'name' => $isAdmin ? 'admin' : $validated['name'],
             'display_name' => $validated['display_name'],
             'description' => $validated['description'] ?? null,
-            'is_active' => $validated['is_active'] ?? true,
+            'is_active' => $isAdmin ? true : ($validated['is_active'] ?? true),
         ]);
 
-        $role->permissions()->sync($validated['permissions'] ?? []);
+        if ($isAdmin) {
+            // Admin selalu punya semua permission — abaikan input dari form.
+            $role->permissions()->sync(Permission::pluck('id')->toArray());
+        } else {
+            $role->permissions()->sync($validated['permissions'] ?? []);
+        }
 
         return redirect()->route('role.index')
             ->with('success', 'Role berhasil diupdate');
@@ -157,5 +165,45 @@ class RoleController extends Controller
 
         return redirect()->route('role.index')
             ->with('success', 'Role berhasil dihapus');
+    }
+
+    /**
+     * Custom Indonesian validation messages.
+     */
+    protected function validationMessages(): array
+    {
+        return [
+            'name.required'         => 'Nama role wajib diisi.',
+            'name.string'           => 'Nama role harus berupa teks.',
+            'name.max'              => 'Nama role maksimal :max karakter.',
+            'name.unique'           => 'Nama role ini sudah digunakan, pilih nama lain.',
+            'name.alpha_dash'       => 'Nama role hanya boleh berisi huruf, angka, strip (-), dan underscore (_), tanpa spasi.',
+
+            'display_name.required' => 'Display name wajib diisi.',
+            'display_name.string'   => 'Display name harus berupa teks.',
+            'display_name.max'      => 'Display name maksimal :max karakter.',
+
+            'description.string'    => 'Deskripsi harus berupa teks.',
+            'description.max'       => 'Deskripsi maksimal :max karakter.',
+
+            'is_active.boolean'     => 'Status harus berupa Aktif atau Nonaktif.',
+
+            'permissions.array'     => 'Format permissions tidak valid.',
+            'permissions.*.exists'  => 'Salah satu permission yang dipilih tidak valid.',
+        ];
+    }
+
+    /**
+     * Custom field attribute names.
+     */
+    protected function validationAttributes(): array
+    {
+        return [
+            'name'         => 'Nama role',
+            'display_name' => 'Display name',
+            'description'  => 'Deskripsi',
+            'is_active'    => 'Status',
+            'permissions'  => 'Permissions',
+        ];
     }
 }

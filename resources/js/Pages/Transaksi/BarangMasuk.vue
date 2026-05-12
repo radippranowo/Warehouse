@@ -75,7 +75,7 @@ const {
     totalValue,
     formatCurrency,
     formatNumber 
-} = useTransaksiForm(form, barangsRef);
+} = useTransaksiForm(form, barangsRef, 'in');
 
 const hasErrors = computed(() => {
     return !form.gudang_id || 
@@ -242,17 +242,17 @@ onUnmounted(() => {
                         </button>
                     </div>
                     <div class="card-body p-2">
-                        <div class="table-responsive">
+                        <div>
                             <table class="table table-hover mb-0 table-sm">
                                 <thead class="table-light">
                                     <tr>
                                         <th style="width: 3%;" class="text-center">#</th>
-                                        <th style="width: 32%;">Barang</th>
+                                        <th style="width: 33%;">Barang</th>
                                         <th style="width: 8%;" class="text-center">Satuan</th>
-                                        <th style="width: 13%;">Qty</th>
-                                        <th style="width: 18%;">Harga Modal</th>
+                                        <th style="width: 10%;">Qty</th>
+                                        <th style="width: 18%;">Harga (Rp)</th>
                                         <th style="width: 18%;" class="text-end">Subtotal</th>
-                                        <th style="width: 5%;" class="text-center">
+                                        <th style="width: 10%;" class="text-center">
                                             <i class="bx bx-trash"></i>
                                         </th>
                                     </tr>
@@ -262,17 +262,19 @@ onUnmounted(() => {
                                         <td class="text-center align-middle">
                                             <span class="badge bg-secondary">{{ idx + 1 }}</span>
                                         </td>
-                                        <td class="py-2">
-                                            <SearchInput
-                                                :id="`barang_masuk_${idx}`"
-                                                v-model="row.barang_id"
-                                                :options="barangOptions"
-                                                placeholder="Cari barang..."
-                                                :invalid="!!rowErrors[idx]?.barang_id"
-                                                @select="onBarangSelected(idx, $event)"
-                                                :tabindex="idx * 10 + 1" />
-                                            <div v-if="rowErrors[idx]?.barang_id" class="text-danger small mt-1">
-                                                {{ rowErrors[idx].barang_id }}
+                                        <td class="align-middle">
+                                            <div class="cell-wrapper">
+                                                <SearchInput
+                                                    :id="`barang_masuk_${idx}`"
+                                                    v-model="row.barang_id"
+                                                    :options="barangOptions"
+                                                    placeholder="Cari barang..."
+                                                    :invalid="!!rowErrors[idx]?.barang_id"
+                                                    @select="onBarangSelected(idx, $event)"
+                                                    :tabindex="idx * 10 + 1" />
+                                                <div v-if="rowErrors[idx]?.barang_id" class="error-message">
+                                                    {{ rowErrors[idx].barang_id }}
+                                                </div>
                                             </div>
                                         </td>
                                         <td class="text-center align-middle">
@@ -281,29 +283,29 @@ onUnmounted(() => {
                                             </span>
                                             <span v-else class="badge bg-secondary">-</span>
                                         </td>
-                                        <td class="py-2">
-                                            <input :id="`qty_masuk_${idx}`" :name="`items[${idx}][qty]`" 
-                                                v-model.number="row.qty" type="number" step="0.01" min="0.01"
-                                                class="form-control text-end fw-bold"
-                                                :class="{ 'is-invalid': rowErrors[idx]?.qty }"
-                                                style="font-size: 16px; height: 42px;"
-                                                :aria-label="`Qty barang baris ${idx + 1}`">
-                                            <div v-if="rowErrors[idx]?.qty" class="text-danger small mt-1">
-                                                {{ rowErrors[idx].qty }}
+                                        <td class="align-middle">
+                                            <div class="cell-wrapper">
+                                                <input :id="`qty_masuk_${idx}`" :name="`items[${idx}][qty]`" 
+                                                    v-model.number="row.qty" type="number" step="0.01" min="0.01"
+                                                    class="form-control text-end"
+                                                    :class="{ 'is-invalid': rowErrors[idx]?.qty }"
+                                                    :aria-label="`Qty barang baris ${idx + 1}`">
+                                                <div v-if="rowErrors[idx]?.qty" class="error-message">
+                                                    {{ rowErrors[idx].qty }}
+                                                </div>
                                             </div>
                                         </td>
-                                        <td class="py-2">
-                                            <div class="input-group">
-                                                <span class="input-group-text" style="font-size: 14px;">Rp</span>
+                                        <td class="align-middle">
+                                            <div class="cell-wrapper">
                                                 <input :id="`harga_satuan_masuk_${idx}`" :name="`items[${idx}][harga_satuan]`" 
                                                     v-model.number="row.harga_satuan" type="number" step="0.01" min="0"
-                                                    class="form-control text-end fw-bold"
+                                                    class="form-control text-end"
                                                     :class="{ 'is-invalid': rowErrors[idx]?.harga_satuan }"
-                                                    style="font-size: 15px; height: 42px;"
-                                                    :aria-label="`Harga modal barang baris ${idx + 1}`">
-                                            </div>
-                                            <div v-if="rowErrors[idx]?.harga_satuan" class="text-danger small mt-1">
-                                                {{ rowErrors[idx].harga_satuan }}
+                                                    placeholder="0"
+                                                    :aria-label="`Harga barang baris ${idx + 1}`">
+                                                <div v-if="rowErrors[idx]?.harga_satuan" class="error-message">
+                                                    {{ rowErrors[idx].harga_satuan }}
+                                                </div>
                                             </div>
                                         </td>
                                         <td class="text-end align-middle">
@@ -333,7 +335,7 @@ onUnmounted(() => {
             <!-- Right Panel - Summary & Actions -->
             <div class="col-lg-4">
                 <!-- Summary Card -->
-                <div class="card shadow-sm mb-3 sticky-top" style="top: 20px;">
+                <div class="card shadow-sm mb-3 sticky-top" style="top: 100px; z-index: 900;">
                     <div class="card-header bg-success text-white">
                         <h6 class="mb-0 fw-semibold">
                             <i class="bx bx-calculator me-1"></i>Ringkasan Transaksi
@@ -402,12 +404,12 @@ onUnmounted(() => {
 
                 <!-- Keterangan Item Card -->
                 <div class="card shadow-sm mt-3">
-                    <div class="card-header bg-light">
+                    <div class="card-header bg-light py-2">
                         <h6 class="mb-0 fw-semibold">
                             <i class="bx bx-note me-1"></i>Keterangan Item
                         </h6>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body py-2">
                         <div v-for="(row, idx) in form.items" :key="row._key" class="mb-2">
                             <label :for="`keterangan_item_masuk_${idx}`" class="form-label small mb-1">
                                 Item {{ idx + 1 }}
@@ -429,9 +431,52 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* Hilangkan icon tanda seru Bootstrap yang bertabrakan */
+/* 1. Reset Global Row */
+tbody tr {
+    height: 80px; /* Tinggi tetap agar layout stabil saat error muncul */
+}
+
+tbody td {
+    vertical-align: middle !important;
+    padding: 8px !important;
+    position: relative;
+}
+
+/* 2. Cell Wrapper & Input */
+.cell-wrapper {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 40px;
+    position: relative;
+}
+
 .form-control.is-invalid {
     background-image: none !important;
     padding-right: 0.75rem !important;
+    border-color: #dc3545;
+}
+
+/* 3. Error Message (Absolute agar tidak mendorong baris) */
+.error-message {
+    position: absolute;
+    bottom: -18px; /* Muncul tepat di bawah input */
+    left: 0;
+    font-size: 11px;
+    color: #dc3545;
+    white-space: nowrap;
+    line-height: 1;
+}
+
+/* 4. Kolom Statis (Nomor, Harga, Subtotal) */
+.static-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 40px; /* Samakan dengan tinggi input agar sejajar */
+}
+
+.text-end .static-content {
+    justify-content: flex-end;
 }
 </style>

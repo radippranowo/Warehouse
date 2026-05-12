@@ -1,8 +1,13 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
+import { useSingleFlight } from '@/composables/useSingleFlight';
+import { usePartialReloadLoading } from '@/composables/usePartialReloadLoading';
+
+const { busy, run } = useSingleFlight();
+const { loading } = usePartialReloadLoading('/riwayat/barang-keluar');
 
 const props = defineProps({
     mutasis: { type: Object, required: true },
@@ -17,6 +22,7 @@ const perPage = ref(props.filters.perPage ?? 25);
 const gudangId = ref(props.filters.gudang_id ?? '');
 const dateFrom = ref(props.filters.date_from ?? '');
 const dateTo = ref(props.filters.date_to ?? '');
+const skeletonRows = computed(() => Math.min(Number(perPage.value) || 10, 10));
 
 // Modal pembatalan
 const showCancelModal = ref(false);
@@ -40,7 +46,7 @@ function reload() {
     });
 }
 
-watch(search, () => { clearTimeout(timer); timer = setTimeout(reload, 300); });
+watch(search, () => { clearTimeout(timer); timer = setTimeout(reload, 400); });
 watch([perPage, gudangId, dateFrom, dateTo], reload);
 
 function changePerPage(n) { perPage.value = n; }
@@ -99,7 +105,7 @@ function submitCancel() {
     }
 
     const mutasi = cancelMutasi.value;
-    router.delete(`/transaksi/${mutasi.id}`, {
+    run(`cancel-${mutasi.id}`, (done) => router.delete(`/transaksi/${mutasi.id}`, {
         data: { cancellation_reason: reason },
         preserveScroll: true,
         onSuccess: () => {
@@ -113,7 +119,8 @@ function submitCancel() {
                 window.toast?.error('Gagal membatalkan transaksi');
             }
         },
-    });
+        onFinish: done,
+    }));
 }
 </script>
 
@@ -183,7 +190,24 @@ function submitCancel() {
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="(item, i) in mutasis.data" :key="item.id">
+                                <template v-if="loading">
+                                    <tr v-for="n in skeletonRows" :key="`skel-${n}`" class="skeleton-row">
+                                        <td><span class="skel skel-sm" style="width: 24px;"></span></td>
+                                        <td><span class="skel" style="width: 80px;"></span></td>
+                                        <td><span class="skel" style="width: 110px;"></span><br><span class="skel skel-sm mt-1" style="width: 70px;"></span></td>
+                                        <td><span class="skel" style="width: 120px;"></span></td>
+                                        <td><span class="skel skel-pill" style="width: 30px;"></span></td>
+                                        <td><span class="skel" style="width: 50px;"></span></td>
+                                        <td><span class="skel" style="width: 100px;"></span></td>
+                                        <td><span class="skel" style="width: 100px;"></span></td>
+                                        <td>
+                                            <span class="skel skel-sm" style="width: 28px; height: 28px; border-radius: 4px;"></span>
+                                            <span class="skel skel-sm ms-1" style="width: 28px; height: 28px; border-radius: 4px;"></span>
+                                            <span class="skel skel-sm ms-1" style="width: 28px; height: 28px; border-radius: 4px;"></span>
+                                        </td>
+                                    </tr>
+                                </template>
+                                <tr v-else v-for="(item, i) in mutasis.data" :key="item.id">
                                     <td>{{ (mutasis.current_page - 1) * mutasis.per_page + i + 1 }}</td>
                                     <td>{{ new Date(item.tanggal).toLocaleDateString('id-ID') }}</td>
                                     <td>
@@ -204,8 +228,8 @@ function submitCancel() {
                                             @click="openCancelModal(item)" title="Batalkan Transaksi"></button>
                                     </td>
                                 </tr>
-                                <tr v-if="!mutasis.data.length">
-                                    <td colspan="10" class="text-center text-muted py-4">Tidak ada data pengeluaran</td>
+                                <tr v-if="!loading && !mutasis.data.length">
+                                    <td colspan="9" class="text-center text-muted py-4">Tidak ada data pengeluaran</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -271,7 +295,8 @@ function submitCancel() {
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" @click="closeCancelModal">Batal</button>
-                    <button type="button" class="btn btn-danger" @click="submitCancel">
+                    <button type="button" class="btn btn-danger" @click="submitCancel"
+                        :disabled="cancelMutasi && busy(`cancel-${cancelMutasi.id}`)">
                         <i class="bx bx-x-circle me-1"></i> Batalkan Transaksi
                     </button>
                 </div>

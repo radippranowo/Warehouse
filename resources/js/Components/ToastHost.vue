@@ -12,17 +12,17 @@ function push(type, message) {
     }, 2200);
 }
 
-const confirmState = ref({ open: false, title: '', text: '', resolve: null });
+const confirmState = ref({ open: false, title: '', text: '', okText: 'Ya', okClass: 'btn-danger', resolve: null });
 
-function ask({ title, text }) {
+function ask({ title, text, okText = 'Ya, hapus', okClass = 'btn-danger' }) {
     return new Promise((resolve) => {
-        confirmState.value = { open: true, title, text, resolve };
+        confirmState.value = { open: true, title, text, okText, okClass, resolve };
     });
 }
 
 function answer(ok) {
     const r = confirmState.value.resolve;
-    confirmState.value = { open: false, title: '', text: '', resolve: null };
+    confirmState.value = { open: false, title: '', text: '', okText: 'Ya', okClass: 'btn-danger', resolve: null };
     if (r) r(ok);
 }
 
@@ -31,6 +31,7 @@ onMounted(() => {
         success: (m) => push('success', m),
         error:   (m) => push('error',   m),
         info:    (m) => push('info',    m),
+        warning: (m) => push('info',    m),
     };
     window.confirmDialog = ask;
 });
@@ -53,7 +54,7 @@ onMounted(() => {
                 <div class="confirm-text" v-if="confirmState.text">{{ confirmState.text }}</div>
                 <div class="confirm-actions">
                     <button class="btn btn-light btn-rounded" @click="answer(false)">Batal</button>
-                    <button class="btn btn-danger btn-rounded" @click="answer(true)">Ya, hapus</button>
+                    <button class="btn btn-rounded" :class="confirmState.okClass" @click="answer(true)">{{ confirmState.okText }}</button>
                 </div>
             </div>
         </div>

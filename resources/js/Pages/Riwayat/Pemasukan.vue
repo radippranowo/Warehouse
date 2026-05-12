@@ -1,8 +1,13 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
+import { useSingleFlight } from '@/composables/useSingleFlight';
+import { usePartialReloadLoading } from '@/composables/usePartialReloadLoading';
+
+const { busy, run } = useSingleFlight();
+const { loading } = usePartialReloadLoading('/riwayat/barang-masuk');
 
 const props = defineProps({
     mutasis: { type: Object, required: true },
@@ -17,6 +22,7 @@ const perPage = ref(props.filters.perPage ?? 25);
 const gudangId = ref(props.filters.gudang_id ?? '');
 const dateFrom = ref(props.filters.date_from ?? '');
 const dateTo = ref(props.filters.date_to ?? '');
+const skeletonRows = computed(() => Math.min(Number(perPage.value) || 10, 10));
 
 // Modal pembatalan
 const showCancelModal = ref(false);
@@ -40,7 +46,7 @@ function reload() {
     });
 }
 
-watch(search, () => { clearTimeout(timer); timer = setTimeout(reload, 300); });
+watch(search, () => { clearTimeout(timer); timer = setTimeout(reload, 400); });
 watch([perPage, gudangId, dateFrom, dateTo], reload);
 
 function changePerPage(n) { perPage.value = n; }
@@ -91,7 +97,6 @@ function closeCancelModal() {
 }
 
 function submitCancel() {
-    // Validasi alasan
     const reason = cancelReason.value.trim();
     if (reason.length < 10) {
         cancelReasonError.value = 'Alasan pembatalan minimal 10 karakter';
@@ -99,7 +104,7 @@ function submitCancel() {
     }
 
     const mutasi = cancelMutasi.value;
-    router.delete(`/transaksi/${mutasi.id}`, {
+    run(`cancel-${mutasi.id}`, (done) => router.delete(`/transaksi/${mutasi.id}`, {
         data: { cancellation_reason: reason },
         preserveScroll: true,
         onSuccess: () => {
@@ -113,7 +118,8 @@ function submitCancel() {
                 window.toast?.error('Gagal membatalkan transaksi');
             }
         },
-    });
+        onFinish: done,
+    }));
 }
 </script>
 
@@ -171,21 +177,39 @@ function submitCancel() {
                         <table class="table align-middle table-nowrap table-hover">
                             <thead class="table-light">
                                 <tr>
-                                    <th style="width: 50px;">No</th>
-                                    <th>Tanggal</th>
-                                    <th>Nomor</th>
-                                    <th>Supplier</th>
-                                    <th>Gudang</th>
-                                    <th>Items</th>
-                                    <th>Total Qty</th>
-                                    <th>Total Harga Modal</th>
-                                    <th>Dibuat Oleh</th>
-                                    <th style="width: 140px;">Action</th>
+                                    <th style="width: 3%;" class="text-center">No</th>
+                                    <th style="width: 8%;">Tanggal</th>
+                                    <th style="width: 12%;">Nomor</th>
+                                    <th style="width: 15%;">Supplier</th>
+                                    <th style="width: 12%;">Gudang</th>
+                                    <th style="width: 6%;" class="text-center">Items</th>
+                                    <th style="width: 8%;" class="text-end">Total Qty</th>
+                                    <th style="width: 12%;" class="text-end">Total Harga</th>
+                                    <th style="width: 12%;">Dibuat Oleh</th>
+                                    <th style="width: 12%;" class="text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="(item, i) in mutasis.data" :key="item.id">
-                                    <td>{{ (mutasis.current_page - 1) * mutasis.per_page + i + 1 }}</td>
+                                <template v-if="loading">
+                                    <tr v-for="n in skeletonRows" :key="`skel-${n}`" class="skeleton-row">
+                                        <td class="text-center"><span class="skel skel-sm" style="width: 24px;"></span></td>
+                                        <td><span class="skel" style="width: 80px;"></span></td>
+                                        <td><span class="skel" style="width: 110px;"></span><br><span class="skel skel-sm mt-1" style="width: 70px;"></span></td>
+                                        <td><span class="skel" style="width: 130px;"></span><br><span class="skel skel-sm mt-1" style="width: 80px;"></span></td>
+                                        <td><span class="skel" style="width: 100px;"></span></td>
+                                        <td class="text-center"><span class="skel skel-pill" style="width: 30px;"></span></td>
+                                        <td class="text-end"><span class="skel" style="width: 50px;"></span></td>
+                                        <td class="text-end"><span class="skel" style="width: 90px;"></span></td>
+                                        <td><span class="skel" style="width: 100px;"></span></td>
+                                        <td class="text-center">
+                                            <span class="skel skel-sm" style="width: 28px; height: 28px; border-radius: 4px;"></span>
+                                            <span class="skel skel-sm ms-1" style="width: 28px; height: 28px; border-radius: 4px;"></span>
+                                            <span class="skel skel-sm ms-1" style="width: 28px; height: 28px; border-radius: 4px;"></span>
+                                        </td>
+                                    </tr>
+                                </template>
+                                <tr v-else v-for="(item, i) in mutasis.data" :key="item.id">
+                                    <td class="text-center">{{ (mutasis.current_page - 1) * mutasis.per_page + i + 1 }}</td>
                                     <td>{{ new Date(item.tanggal).toLocaleDateString('id-ID') }}</td>
                                     <td>
                                         <strong>{{ item.nomor_mutasi }}</strong>
@@ -196,11 +220,11 @@ function submitCancel() {
                                         <br><small class="text-muted">{{ item.supplier?.kode_supplier || '' }}</small>
                                     </td>
                                     <td>{{ item.gudang?.nama_gudang || '-' }}</td>
-                                    <td><span class="badge bg-primary">{{ item.items_count }}</span></td>
-                                    <td>{{ item.total_qty?.toLocaleString('id-ID') || 0 }}</td>
-                                    <td><strong><span class="rupiah-format"><span class="rp">Rp</span><span class="amount">{{ fmtRpNumber(item.total_value) }}</span></span></strong></td>
+                                    <td class="text-center"><span class="badge bg-primary">{{ item.items_count }}</span></td>
+                                    <td class="text-end">{{ item.total_qty?.toLocaleString('id-ID') || 0 }}</td>
+                                    <td class="text-end"><strong>Rp {{ fmtRpNumber(item.total_value) }}</strong></td>
                                     <td>{{ item.user?.name || '-' }}</td>
-                                    <td>
+                                    <td class="text-center">
                                         <button class="btn btn-sm btn-soft-info border-0 shadow-sm bx bx-show font-size-16"
                                             @click="viewDetail(item)" title="Detail"></button>
                                         <button class="btn btn-sm btn-soft-secondary border-0 shadow-sm bx bx-printer font-size-16 ms-1"
@@ -209,8 +233,8 @@ function submitCancel() {
                                             @click="openCancelModal(item)" title="Batalkan Transaksi"></button>
                                     </td>
                                 </tr>
-                                <tr v-if="!mutasis.data.length">
-                                    <td colspan="11" class="text-center text-muted py-4">Tidak ada data pemasukan</td>
+                                <tr v-if="!loading && !mutasis.data.length">
+                                    <td colspan="10" class="text-center text-muted py-4">Tidak ada data pemasukan</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -276,7 +300,8 @@ function submitCancel() {
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" @click="closeCancelModal">Batal</button>
-                    <button type="button" class="btn btn-danger" @click="submitCancel">
+                    <button type="button" class="btn btn-danger" @click="submitCancel"
+                        :disabled="cancelMutasi && busy(`cancel-${cancelMutasi.id}`)">
                         <i class="bx bx-x-circle me-1"></i> Batalkan Transaksi
                     </button>
                 </div>
@@ -286,26 +311,8 @@ function submitCancel() {
 </template>
 
 <style scoped>
-/* Pastikan semua input berbentuk kotak (tidak bulat) */
 .form-control,
 .form-select {
     border-radius: 0.25rem !important;
-}
-
-.rupiah-format {
-    display: inline-flex;
-    justify-content: space-between;
-    width: 100%;
-    gap: 0.5rem;
-}
-
-.rupiah-format .rp {
-    text-align: left;
-    flex-shrink: 0;
-}
-
-.rupiah-format .amount {
-    text-align: right;
-    flex-grow: 1;
 }
 </style>

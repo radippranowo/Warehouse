@@ -167,4 +167,26 @@ class StokApiController extends Controller
             'total' => $items->count()
         ])->header('Cache-Control', 'public, max-age=300');
     }
+
+    /**
+     * Get stok spesifik barang di gudang tertentu
+     * GET /api/v1/stok/{barangId}/{gudangId}
+     */
+    public function getStock($barangId, $gudangId)
+    {
+        $barangId = (int) $barangId;
+        $gudangId = (int) $gudangId;
+
+        $stok = BarangStok::where('barang_id', $barangId)
+            ->where('gudang_id', $gudangId)
+            ->first();
+
+        return response()->json([
+            'success' => true,
+            'barang_id' => $barangId,
+            'gudang_id' => $gudangId,
+            'stok' => $stok ? (int) $stok->stok : 0,
+            'min_stok' => $stok ? (int) $stok->min_stok : 0,
+        ])->header('Cache-Control', 'public, max-age=60');
+    }
 }

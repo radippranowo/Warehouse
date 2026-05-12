@@ -2,6 +2,9 @@
 import { ref, computed } from 'vue';
 import { router, Link, Head } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { useSingleFlight } from '@/composables/useSingleFlight';
+
+const { busy, run } = useSingleFlight();
 
 const props = defineProps({
     roles: { type: Array, required: true },
@@ -43,14 +46,14 @@ function deleteRole(role) {
         return;
     }
     
-    if (confirm(`Yakin ingin menghapus role "${role.display_name}"?`)) {
+    if (!confirm(`Yakin ingin menghapus role "${role.display_name}"?`)) return;
+    run(`del-${role.id}`, (done) => {
         router.delete(`/role/${role.id}`, {
             preserveScroll: true,
-            onSuccess: () => {
-                window.toast?.success('Role berhasil dihapus');
-            },
+            onSuccess: () => window.toast?.success('Role berhasil dihapus'),
+            onFinish: done,
         });
-    }
+    });
 }
 
 function getRoleIcon(roleName) {
@@ -99,7 +102,7 @@ function getRoleIcon(roleName) {
                         >
                     </div>
                     <div class="col-md-2">
-                        <select class="form-select" v-model="filterStatus">
+                        <select id="filter_status_role" name="filter_status" class="form-select" v-model="filterStatus" aria-label="Filter status role">
                             <option value="all">Semua Status</option>
                             <option value="active">Aktif</option>
                             <option value="inactive">Nonaktif</option>
@@ -155,10 +158,10 @@ function getRoleIcon(roleName) {
                                         class="btn btn-sm btn-soft-info border-0 shadow-sm bx bx-pencil font-size-16"
                                         title="Edit">
                                     </Link>
-                                    <button 
-                                        @click="deleteRole(role)" 
+                                    <button
+                                        @click="deleteRole(role)"
                                         class="btn btn-soft-danger btn-sm border-0 shadow-sm bx bx-trash font-size-16 ms-1"
-                                        :disabled="role.name === 'admin' || role.users_count > 0"
+                                        :disabled="role.name === 'admin' || role.users_count > 0 || busy(`del-${role.id}`)"
                                         :title="role.name === 'admin' ? 'Tidak bisa hapus admin' : role.users_count > 0 ? 'Role masih digunakan' : 'Hapus'"
                                     ></button>
                                 </td>

@@ -6,9 +6,12 @@ use App\Http\Requests\StoreMutasiRequest;
 use App\Models\Barang;
 use App\Models\BarangStok;
 use App\Models\Gudang;
+use App\Models\StokLot;
+use App\Models\StokLotConsumption;
 use App\Models\StokMutasi;
 use App\Models\StokMutasiItem;
 use App\Models\Supplier;
+use App\Services\StokLotService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +20,8 @@ use Inertia\Inertia;
 
 class MutasiController extends Controller
 {
+    public function __construct(private StokLotService $lots) {}
+
     public function index(Request $request)
     {
         $perPage = (int) $request->input('perPage', 25);
@@ -77,8 +82,6 @@ class MutasiController extends Controller
                 'gudang_id' => $gudang,
                 'status'    => $status,
             ],
-            // Closure → cuma di-evaluate kalau 'gudangs' diminta via `only` (full
-            // visit awal). Partial reload (search/filter/paginate) skip total.
             'gudangs' => fn () => Gudang::select('id', 'kode_gudang', 'nama_gudang')->orderBy('nama_gudang')->get(),
         ]);
     }
@@ -94,7 +97,7 @@ class MutasiController extends Controller
             'canceller:id,name',
             'items.barang:id,kode_barang,nama_barang,satuan',
         ]);
-        
+
         return Inertia::render('Transaksi/Detail', [
             'mutasi' => $mutasi,
         ]);
@@ -116,7 +119,7 @@ class MutasiController extends Controller
 
     public function printList(Request $request)
     {
-        $tipe = $request->input('tipe', 'in'); // in, out, transfer, adjust
+        $tipe = $request->input('tipe', 'in');
         $gudangId = $request->input('gudang_id', '');
         $dateFrom = $request->input('date_from', '');
         $dateTo = $request->input('date_to', '');
@@ -195,6 +198,7 @@ class MutasiController extends Controller
             $tipe   = $data['tipe'];
             $gId    = (int) $data['gudang_id'];
             $tujuan = $data['gudang_tujuan_id'] ?? null;
+            $supplierId = isset($data['supplier_id']) ? (int) $data['supplier_id'] : null;
 
             $isTransfer = $tipe === 'transfer';
             $header = StokMutasi::create([
@@ -203,6 +207,7 @@ class MutasiController extends Controller
                 'tipe'             => $tipe,
                 'gudang_id'        => $gId,
                 'gudang_tujuan_id' => $tujuan,
+                'supplier_id'      => $supplierId,
                 'referensi'        => $data['referensi'] ?? null,
                 'keterangan'       => $data['keterangan'] ?? null,
                 'user_id'          => $request->user()?->id,
@@ -245,18 +250,26 @@ class MutasiController extends Controller
                             "items.$i.qty" => "Stok asal tidak cukup. Tersedia: {$stokSebelum}",
                         ]);
                     }
-                    // In-transit: kurangi dari gudang asal sekarang, baru tambah ke
-                    // gudang tujuan setelah penerima approve.
                     $source->decrement('stok', $qty);
                     $stokSesudah = $stokSebelum - $qty;
                 } elseif ($tipe === 'adjust') {
+                    if ($qty < 0) {
+                        throw ValidationException::withMessages([
+                            "items.$i.qty" => "Stok baru tidak boleh negatif",
+                        ]);
+                    }
+                    if ($qty > 999999) {
+                        throw ValidationException::withMessages([
+                            "items.$i.qty" => "Stok baru terlalu besar (maksimal 999,999)",
+                        ]);
+                    }
                     $source->update(['stok' => $qty]);
                     $stokSesudah = $qty;
                     $itemKet = trim(($itemKet ? $itemKet . ' | ' : '')
                         . "Penyesuaian: {$stokSebelum} → {$qty}");
                 }
 
-                StokMutasiItem::create([
+                $item = StokMutasiItem::create([
                     'stok_mutasi_id' => $header->id,
                     'barang_id'      => $bId,
                     'qty'            => $qty,
@@ -265,6 +278,43 @@ class MutasiController extends Controller
                     'stok_sesudah'   => $stokSesudah,
                     'keterangan'     => $itemKet,
                 ]);
+
+                // === FIFO lot accounting ===
+                if ($tipe === 'in') {
+                    $hargaBeli = (float) ($harga ?? Barang::where('id', $bId)->value('harga_beli') ?? 0);
+                    $this->lots->createLot(
+                        barangId: $bId,
+                        gudangId: $gId,
+                        qty: $qty,
+                        hargaBeli: $hargaBeli,
+                        stokMutasiId: $header->id,
+                        stokMutasiItemId: $item->id,
+                        tanggal: $data['tanggal'],
+                        supplierId: $supplierId,
+                    );
+                } elseif ($tipe === 'out') {
+                    $this->lots->consumeFifo($bId, $gId, $qty, $item->id);
+                } elseif ($tipe === 'transfer') {
+                    // Pending: konsumsi di asal saja. Lot di tujuan dibuat saat approve.
+                    $this->lots->consumeFifo($bId, $gId, $qty, $item->id);
+                } elseif ($tipe === 'adjust') {
+                    $delta = $qty - $stokSebelum;
+                    if ($delta > 0) {
+                        $hargaBeli = (float) ($harga ?? Barang::where('id', $bId)->value('harga_beli') ?? 0);
+                        $this->lots->createLot(
+                            barangId: $bId,
+                            gudangId: $gId,
+                            qty: $delta,
+                            hargaBeli: $hargaBeli,
+                            stokMutasiId: $header->id,
+                            stokMutasiItemId: $item->id,
+                            tanggal: $data['tanggal'],
+                            supplierId: null,
+                        );
+                    } elseif ($delta < 0) {
+                        $this->lots->consumeFifo($bId, $gId, abs($delta), $item->id);
+                    }
+                }
 
                 $totalQty   += $qty;
                 $totalValue += $qty * (float) ($harga ?? 0);
@@ -276,19 +326,19 @@ class MutasiController extends Controller
             ]);
         });
 
-        // Invalidate cached summary for affected warehouses (StokController).
         Cache::forget("stok.summary.{$data['gudang_id']}");
         if (!empty($data['gudang_tujuan_id'])) {
             Cache::forget("stok.summary.{$data['gudang_tujuan_id']}");
         }
 
-        // Redirect berdasarkan tipe transaksi
+        // Tipe yang divalidasi: in, out, transfer, adjust (lihat StoreMutasiRequest).
+        // URL harus match route name di routes/web.php (riwayat.*).
         $redirectUrl = match($data['tipe']) {
-            'in' => '/riwayat/barang-masuk',
-            'out' => '/riwayat/barang-keluar',
-            'transfer' => '/riwayat/transfer-gudang',
-            'adjustment' => '/riwayat/penyesuaian-stok',
-            default => '/riwayat/semua',
+            'in'       => '/riwayat/barang-masuk',
+            'out'      => '/riwayat/barang-keluar',
+            'transfer' => '/riwayat/transfer',
+            'adjust'   => '/riwayat/penyesuaian',
+            default    => '/riwayat/semua',
         };
 
         return redirect($redirectUrl)->with('success', 'Mutasi tersimpan');
@@ -301,8 +351,6 @@ class MutasiController extends Controller
         }
 
         DB::transaction(function () use ($mutasi, $request) {
-            // Lock row mutasi & re-check status agar aman dari double-approve
-            // (TOCTOU pada dua request bersamaan).
             $locked = StokMutasi::whereKey($mutasi->id)->lockForUpdate()->first();
             if ($locked->status !== 'pending') {
                 throw ValidationException::withMessages([
@@ -318,6 +366,24 @@ class MutasiController extends Controller
                         ['stok' => 0]
                     );
                 $dest->increment('stok', $item->qty);
+
+                // FIFO: bangun lots baru di gudang tujuan, satu per consumption
+                // record di asal — supaya granularity harga beli per batch terjaga.
+                $consumptions = StokLotConsumption::where('stok_mutasi_item_id', $item->id)
+                    ->orderBy('id')
+                    ->get();
+                foreach ($consumptions as $c) {
+                    $this->lots->createLot(
+                        barangId: $item->barang_id,
+                        gudangId: $tujuan,
+                        qty: $c->qty,
+                        hargaBeli: (float) $c->harga_beli,
+                        stokMutasiId: $locked->id,
+                        stokMutasiItemId: $item->id,
+                        tanggal: $locked->tanggal,
+                        supplierId: null,
+                    );
+                }
             }
 
             $locked->update([
@@ -353,7 +419,6 @@ class MutasiController extends Controller
                 ]);
             }
 
-            // Kembalikan stok ke gudang asal (rollback in-transit).
             $asal = $locked->gudang_id;
             foreach ($locked->items()->get() as $item) {
                 $src = BarangStok::lockForUpdate()
@@ -362,6 +427,9 @@ class MutasiController extends Controller
                         ['stok' => 0]
                     );
                 $src->increment('stok', $item->qty);
+
+                // FIFO: kembalikan lots di asal yang tadinya dikonsumsi.
+                $this->lots->restoreConsumption($item->id);
             }
 
             $locked->update([
@@ -379,9 +447,25 @@ class MutasiController extends Controller
 
     public function destroy(Request $request, StokMutasi $mutasi)
     {
-        // Cek apakah sudah dibatalkan
         if ($mutasi->cancelled_at) {
             return back()->with('error', 'Transaksi sudah dibatalkan sebelumnya');
+        }
+
+        if ($mutasi->tipe === 'in' && $mutasi->status === 'approved') {
+            foreach ($mutasi->items as $item) {
+                $stok = BarangStok::where('barang_id', $item->barang_id)
+                    ->where('gudang_id', $mutasi->gudang_id)
+                    ->first();
+
+                if (!$stok || $stok->stok < $item->qty) {
+                    $barang = $item->barang;
+                    $stokTersedia = $stok ? $stok->stok : 0;
+                    return back()->with('error',
+                        "Tidak dapat membatalkan transaksi. Barang \"{$barang->nama_barang}\" memiliki stok {$stokTersedia}, " .
+                        "tidak cukup untuk mengurangi {$item->qty} unit. Stok sudah digunakan untuk transaksi lain."
+                    );
+                }
+            }
         }
 
         $reason = trim((string) $request->input('cancellation_reason', ''));
@@ -389,71 +473,87 @@ class MutasiController extends Controller
             $reason = 'Dibatalkan oleh user';
         }
 
-        DB::transaction(function () use ($mutasi, $request, $reason) {
-            // Lock mutasi
-            $locked = StokMutasi::whereKey($mutasi->id)->lockForUpdate()->first();
+        try {
+            DB::transaction(function () use ($mutasi, $request, $reason) {
+                $locked = StokMutasi::whereKey($mutasi->id)->lockForUpdate()->first();
 
-            // Rollback stok berdasarkan tipe mutasi
-            foreach ($locked->items as $item) {
-                $barangId = $item->barang_id;
-                
-                if ($locked->tipe === 'in') {
-                    // Pemasukan: kurangi stok
-                    $stok = BarangStok::lockForUpdate()
-                        ->where('barang_id', $barangId)
-                        ->where('gudang_id', $locked->gudang_id)
-                        ->first();
-                    if ($stok) {
-                        $stok->decrement('stok', $item->qty);
-                    }
-                } elseif ($locked->tipe === 'out') {
-                    // Pengeluaran: kembalikan stok
-                    $stok = BarangStok::lockForUpdate()
-                        ->firstOrCreate(
-                            ['barang_id' => $barangId, 'gudang_id' => $locked->gudang_id],
-                            ['stok' => 0]
-                        );
-                    $stok->increment('stok', $item->qty);
-                } elseif ($locked->tipe === 'transfer') {
-                    // Transfer: kembalikan ke gudang asal jika sudah approved
-                    if ($locked->status === 'approved') {
-                        // Kurangi dari gudang tujuan
-                        $stokTujuan = BarangStok::lockForUpdate()
+                foreach ($locked->items as $item) {
+                    $barangId = $item->barang_id;
+                    $namaBarang = optional($item->barang)->nama_barang;
+
+                    if ($locked->tipe === 'in') {
+                        // Pemasukan: hapus lot (cek belum dipakai), kurangi BarangStok
+                        $this->lots->deleteLotsForItem($item->id, $namaBarang);
+                        $stok = BarangStok::lockForUpdate()
                             ->where('barang_id', $barangId)
-                            ->where('gudang_id', $locked->gudang_tujuan_id)
+                            ->where('gudang_id', $locked->gudang_id)
                             ->first();
-                        if ($stokTujuan) {
-                            $stokTujuan->decrement('stok', $item->qty);
+                        if ($stok) {
+                            $stok->decrement('stok', $item->qty);
+                        }
+                    } elseif ($locked->tipe === 'out') {
+                        // Pengeluaran: restore lots dari consumption, kembalikan BarangStok
+                        $this->lots->restoreConsumption($item->id);
+                        $stok = BarangStok::lockForUpdate()
+                            ->firstOrCreate(
+                                ['barang_id' => $barangId, 'gudang_id' => $locked->gudang_id],
+                                ['stok' => 0]
+                            );
+                        $stok->increment('stok', $item->qty);
+                    } elseif ($locked->tipe === 'transfer') {
+                        // Transfer rejected: stok & lots sudah dikembalikan saat reject() —
+                        // tidak perlu disentuh lagi. Cukup tandai cancelled_at di luar loop.
+                        if ($locked->status === 'rejected') {
+                            continue;
+                        }
+                        if ($locked->status === 'approved') {
+                            $this->lots->deleteLotsForItem($item->id, $namaBarang);
+                            $stokTujuan = BarangStok::lockForUpdate()
+                                ->where('barang_id', $barangId)
+                                ->where('gudang_id', $locked->gudang_tujuan_id)
+                                ->first();
+                            if ($stokTujuan) {
+                                $stokTujuan->decrement('stok', $item->qty);
+                            }
+                        }
+                        // Pending atau approved: kembalikan ke asal.
+                        $this->lots->restoreConsumption($item->id);
+                        $stokAsal = BarangStok::lockForUpdate()
+                            ->firstOrCreate(
+                                ['barang_id' => $barangId, 'gudang_id' => $locked->gudang_id],
+                                ['stok' => 0]
+                            );
+                        $stokAsal->increment('stok', $item->qty);
+                    } elseif ($locked->tipe === 'adjust') {
+                        // Penyesuaian: balik delta. Lots dari adjust+ → delete; consumption dari adjust- → restore.
+                        $hasLots = StokLot::where('stok_mutasi_item_id', $item->id)->exists();
+                        $hasConsumption = StokLotConsumption::where('stok_mutasi_item_id', $item->id)->exists();
+                        if ($hasLots) {
+                            $this->lots->deleteLotsForItem($item->id, $namaBarang);
+                        }
+                        if ($hasConsumption) {
+                            $this->lots->restoreConsumption($item->id);
+                        }
+                        $stok = BarangStok::lockForUpdate()
+                            ->where('barang_id', $barangId)
+                            ->where('gudang_id', $locked->gudang_id)
+                            ->first();
+                        if ($stok && $item->stok_sebelum !== null) {
+                            $stok->update(['stok' => $item->stok_sebelum]);
                         }
                     }
-                    // Kembalikan ke gudang asal
-                    $stokAsal = BarangStok::lockForUpdate()
-                        ->firstOrCreate(
-                            ['barang_id' => $barangId, 'gudang_id' => $locked->gudang_id],
-                            ['stok' => 0]
-                        );
-                    $stokAsal->increment('stok', $item->qty);
-                } elseif ($locked->tipe === 'adjust') {
-                    // Penyesuaian: kembalikan ke stok sebelumnya
-                    $stok = BarangStok::lockForUpdate()
-                        ->where('barang_id', $barangId)
-                        ->where('gudang_id', $locked->gudang_id)
-                        ->first();
-                    if ($stok && $item->stok_sebelum !== null) {
-                        $stok->update(['stok' => $item->stok_sebelum]);
-                    }
                 }
-            }
 
-            // Tandai sebagai dibatalkan (soft delete)
-            $locked->update([
-                'cancelled_at' => now(),
-                'cancelled_by' => $request->user()?->id,
-                'cancellation_reason' => $reason,
-            ]);
-        });
+                $locked->update([
+                    'cancelled_at' => now(),
+                    'cancelled_by' => $request->user()?->id,
+                    'cancellation_reason' => $reason,
+                ]);
+            });
+        } catch (ValidationException $e) {
+            return back()->with('error', collect($e->errors())->flatten()->first() ?? 'Gagal membatalkan.');
+        }
 
-        // Clear cache
         Cache::forget("stok.summary.{$mutasi->gudang_id}");
         if ($mutasi->gudang_tujuan_id) {
             Cache::forget("stok.summary.{$mutasi->gudang_tujuan_id}");
@@ -462,7 +562,6 @@ class MutasiController extends Controller
         return back()->with('success', 'Transaksi berhasil dibatalkan dan stok telah disesuaikan. Data tetap tersimpan untuk audit.');
     }
 
-    // Pengeluaran
     public function pengeluaran()
     {
         $masters = Cache::remember('mutasi.masters.pengeluaran', 3600, function () {
@@ -484,7 +583,6 @@ class MutasiController extends Controller
         return Inertia::render('Transaksi/BarangKeluar', $masters);
     }
 
-    // Pemasukan
     public function pemasukan()
     {
         $masters = Cache::remember('mutasi.masters.pemasukan', 3600, function () {
@@ -511,7 +609,6 @@ class MutasiController extends Controller
         return Inertia::render('Transaksi/BarangMasuk', $masters);
     }
 
-    // Transfer
     public function transfer()
     {
         $masters = Cache::remember('mutasi.masters.transfer', 3600, function () {
@@ -533,12 +630,11 @@ class MutasiController extends Controller
         return Inertia::render('Transaksi/Transfer', $masters);
     }
 
-    // Penyesuaian
     public function penyesuaian()
     {
         $masters = Cache::remember('mutasi.masters.penyesuaian', 3600, function () {
             return [
-                'barangs' => Barang::select('id', 'kode_barang', 'nama_barang', 'satuan')
+                'barangs' => Barang::select('id', 'kode_barang', 'nama_barang', 'satuan', 'harga_beli as harga')
                     ->where('is_active', true)
                     ->orderBy('nama_barang')
                     ->limit(1000)
@@ -555,7 +651,6 @@ class MutasiController extends Controller
         return Inertia::render('Transaksi/Penyesuaian', $masters);
     }
 
-    // Riwayat - Semua (termasuk yang dibatalkan untuk audit)
     public function riwayatSemua(Request $request)
     {
         $perPage = (int) $request->input('perPage', 25);
@@ -574,29 +669,24 @@ class MutasiController extends Controller
                 'supplier:id,kode_supplier,nama_supplier',
                 'user:id,name',
                 'approver:id,name',
-                'canceller:id,name', // Tambahkan relasi canceller
+                'canceller:id,name',
             ])
             ->withCount('items');
-        // TIDAK filter cancelled_at - tampilkan semua untuk audit
 
-        // Filter tipe
         if (in_array($tipe, ['in', 'out', 'transfer', 'adjust'], true)) {
             $query->where('tipe', $tipe);
         }
 
-        // Filter status
         if (in_array($status, ['pending', 'approved', 'rejected'], true)) {
             $query->where('status', $status);
         }
 
-        // Filter gudang
         if ($gudang) {
             $query->where(function ($q) use ($gudang) {
                 $q->where('gudang_id', $gudang)->orWhere('gudang_tujuan_id', $gudang);
             });
         }
 
-        // Filter tanggal
         if ($dateFrom) {
             $query->whereDate('tanggal', '>=', $dateFrom);
         }
@@ -604,7 +694,6 @@ class MutasiController extends Controller
             $query->whereDate('tanggal', '<=', $dateTo);
         }
 
-        // Search
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('nomor_mutasi', 'like', "%{$search}%")
@@ -637,25 +726,21 @@ class MutasiController extends Controller
         ]);
     }
 
-    // Riwayat - Pemasukan
     public function riwayatPemasukan(Request $request)
     {
         return $this->riwayatBase($request, 'in', 'Riwayat/Pemasukan');
     }
 
-    // Riwayat - Pengeluaran
     public function riwayatPengeluaran(Request $request)
     {
         return $this->riwayatBase($request, 'out', 'Riwayat/Pengeluaran');
     }
 
-    // Riwayat - Transfer
     public function riwayatTransfer(Request $request)
     {
         return $this->riwayatBase($request, 'transfer', 'Riwayat/Transfer');
     }
 
-    // Riwayat - Penyesuaian
     public function riwayatPenyesuaian(Request $request)
     {
         return $this->riwayatBase($request, 'adjust', 'Riwayat/Penyesuaian');
@@ -680,26 +765,22 @@ class MutasiController extends Controller
                 'approver:id,name',
             ])
             ->withCount('items')
-            ->whereNull('cancelled_at'); // Filter transaksi yang tidak dibatalkan
+            ->whereNull('cancelled_at');
 
-        // Filter tipe
         if ($tipe) {
             $query->where('tipe', $tipe);
         }
 
-        // Filter status
         if (in_array($status, ['pending', 'approved', 'rejected'], true)) {
             $query->where('status', $status);
         }
 
-        // Filter gudang
         if ($gudang) {
             $query->where(function ($q) use ($gudang) {
                 $q->where('gudang_id', $gudang)->orWhere('gudang_tujuan_id', $gudang);
             });
         }
 
-        // Filter tanggal
         if ($dateFrom) {
             $query->whereDate('tanggal', '>=', $dateFrom);
         }
@@ -707,7 +788,6 @@ class MutasiController extends Controller
             $query->whereDate('tanggal', '<=', $dateTo);
         }
 
-        // Search
         if ($search !== '') {
             $prefix = $search . '%';
             $query->where(function ($q) use ($search, $prefix) {

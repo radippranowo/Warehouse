@@ -3,6 +3,7 @@ import { ref, watch, computed } from 'vue';
 import { router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
+import { usePartialReloadLoading } from '@/composables/usePartialReloadLoading';
 
 const props = defineProps({
     mutasis: { type: Object, required: true },
@@ -21,6 +22,9 @@ const dateTo = ref(props.filters.date_to ?? '');
 
 let timer = null;
 
+const { loading } = usePartialReloadLoading('/riwayat/semua');
+const skeletonRows = computed(() => Math.min(Number(perPage.value) || 10, 10));
+
 function reload() {
     router.get('/riwayat/semua', {
         search: search.value,
@@ -36,7 +40,7 @@ function reload() {
     });
 }
 
-watch(search, () => { clearTimeout(timer); timer = setTimeout(reload, 300); });
+watch(search, () => { clearTimeout(timer); timer = setTimeout(reload, 400); });
 watch([perPage, gudangId, status, dateFrom, dateTo], reload);
 
 function changePerPage(n) { perPage.value = n; }
@@ -181,7 +185,29 @@ function printMutasi(mutasi) {
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="(item, i) in mutasis.data" :key="item.id" 
+                                <!-- Skeleton rows saat reload partial — thead tetap utuh -->
+                                <template v-if="loading">
+                                    <tr v-for="n in skeletonRows" :key="`skel-${n}`" class="skeleton-row">
+                                        <td><span class="skel skel-sm" style="width: 24px;"></span></td>
+                                        <td><span class="skel" style="width: 80px;"></span></td>
+                                        <td>
+                                            <span class="skel" style="width: 110px;"></span>
+                                            <br><span class="skel skel-sm mt-1" style="width: 70px;"></span>
+                                        </td>
+                                        <td><span class="skel skel-pill" style="width: 70px;"></span></td>
+                                        <td><span class="skel" style="width: 120px;"></span></td>
+                                        <td><span class="skel" style="width: 100px;"></span></td>
+                                        <td><span class="skel skel-sm" style="width: 24px;"></span></td>
+                                        <td><span class="skel skel-sm" style="width: 40px;"></span></td>
+                                        <td><span class="skel" style="width: 90px;"></span></td>
+                                        <td><span class="skel skel-pill" style="width: 70px;"></span></td>
+                                        <td>
+                                            <span class="skel skel-sm" style="width: 28px; height: 28px; border-radius: 4px;"></span>
+                                            <span class="skel skel-sm ms-1" style="width: 28px; height: 28px; border-radius: 4px;"></span>
+                                        </td>
+                                    </tr>
+                                </template>
+                                <tr v-else v-for="(item, i) in mutasis.data" :key="item.id"
                                     :class="{ 'table-secondary': item.cancelled_at }">
                                     <td>{{ (mutasis.current_page - 1) * mutasis.per_page + i + 1 }}</td>
                                     <td>{{ new Date(item.tanggal).toLocaleDateString('id-ID') }}</td>
@@ -223,7 +249,7 @@ function printMutasi(mutasi) {
                                             @click="printMutasi(item)" title="Print"></button>
                                     </td>
                                 </tr>
-                                <tr v-if="!mutasis.data.length">
+                                <tr v-if="!loading && !mutasis.data.length">
                                     <td colspan="11" class="text-center text-muted py-4">Tidak ada data</td>
                                 </tr>
                             </tbody>

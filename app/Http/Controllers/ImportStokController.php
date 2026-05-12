@@ -67,10 +67,23 @@ class ImportStokController extends Controller
 
         $gudangId = $data['gudang_id'] ?? null;
 
+        // Reset komprehensif: stok + seluruh riwayat mutasi + lots FIFO + consumption.
+        // FK cascade dari stok_mutasis menghapus items, lots, dan consumption otomatis.
         $count = DB::transaction(function () use ($gudangId) {
-            $q = DB::table('barang_stoks');
-            if ($gudangId) $q->where('gudang_id', $gudangId);
-            return $q->delete(); // returns affected row count, hemat 1 query
+            // 1. Hapus mutasi yang menyentuh gudang ini (asal atau tujuan untuk transfer).
+            $mutasiQ = DB::table('stok_mutasis');
+            if ($gudangId) {
+                $mutasiQ->where(function ($q) use ($gudangId) {
+                    $q->where('gudang_id', $gudangId)
+                      ->orWhere('gudang_tujuan_id', $gudangId);
+                });
+            }
+            $mutasiQ->delete();
+
+            // 2. Hapus barang_stoks
+            $stokQ = DB::table('barang_stoks');
+            if ($gudangId) $stokQ->where('gudang_id', $gudangId);
+            return $stokQ->delete();
         });
 
         // Invalidate summary cache.
@@ -86,7 +99,7 @@ class ImportStokController extends Controller
 
         return back()->with('import_result', [
             'status'   => 'success',
-            'message'  => "Stok di {$gudangName} direset — {$count} record dihapus",
+            'message'  => "Stok & riwayat di {$gudangName} direset — {$count} record stok dihapus (mutasi & lots ikut terhapus)",
             'imported' => 0,
             'skipped'  => 0,
             'errors'   => [],

@@ -1,7 +1,12 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { router, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { useSingleFlight } from '@/composables/useSingleFlight';
+import { usePartialReloadLoading } from '@/composables/usePartialReloadLoading';
+
+const { busy, run } = useSingleFlight();
+const { loading } = usePartialReloadLoading('/user');
 
 const props = defineProps({
     users: { type: Object, required: true },
@@ -15,6 +20,9 @@ const search = ref(props.filters.search || '');
 const roleFilter = ref(props.filters.role || '');
 const statusFilter = ref(props.filters.status || '');
 const perPage = ref(props.filters.per_page || 20);
+const skeletonRows = computed(() => Math.min(Number(perPage.value) || 10, 10));
+
+let searchTimer = null;
 
 function applyFilters() {
     router.get('/user', {
@@ -28,7 +36,17 @@ function applyFilters() {
     });
 }
 
+// Search di-debounce 300ms — sama pola dengan halaman lain.
+// Filter dropdown (role/status/perPage) langsung apply tanpa delay karena
+// user click cuma sekali, tidak ada keystroke storm.
+watch(search, () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(applyFilters, 400);
+});
+watch([roleFilter, statusFilter, perPage], () => applyFilters());
+
 function resetFilters() {
+    clearTimeout(searchTimer);
     search.value = '';
     roleFilter.value = '';
     statusFilter.value = '';
@@ -37,23 +55,26 @@ function resetFilters() {
 }
 
 function deleteUser(user) {
-    if (confirm(`Hapus user "${user.name}"?`)) {
+    if (!confirm(`Hapus user "${user.name}"?`)) return;
+    run(`del-${user.id}`, (done) => {
         router.delete(`/user/${user.id}`, {
             preserveScroll: true,
-            onSuccess: () => {
-                window.toast?.success('User berhasil dihapus');
-            },
+            onSuccess: () => window.toast?.success('User berhasil dihapus'),
+            onFinish: done,
         });
-    }
+    });
 }
 
 function toggleStatus(user) {
-    router.post(`/user/${user.id}/toggle-status`, {}, {
-        preserveScroll: true,
-        onSuccess: () => {
-            const status = !user.is_active ? 'diaktifkan' : 'dinonaktifkan';
-            window.toast?.success(`User berhasil ${status}`);
-        },
+    run(`toggle-${user.id}`, (done) => {
+        router.post(`/user/${user.id}/toggle-status`, {}, {
+            preserveScroll: true,
+            onSuccess: () => {
+                const status = !user.is_active ? 'diaktifkan' : 'dinonaktifkan';
+                window.toast?.success(`User berhasil ${status}`);
+            },
+            onFinish: done,
+        });
     });
 }
 
@@ -93,11 +114,12 @@ function getRoleBadge(roleName) {
                 <!-- Filters in card header -->
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
-                        <input v-model="search" @keyup.enter="applyFilters" type="text" 
-                            class="form-control" placeholder="Cari nama atau email...">
+                        <input id="search_user" name="search" v-model="search" type="text"
+                            class="form-control" placeholder="Cari nama atau email..."
+                            autocomplete="off" aria-label="Cari user">
                     </div>
                     <div class="col-md-2">
-                        <select v-model="roleFilter" @change="applyFilters" class="form-select">
+                        <select id="role_filter_user" name="role_filter" v-model="roleFilter" @change="applyFilters" class="form-select" aria-label="Filter role">
                             <option value="">Semua Role</option>
                             <option v-for="role in roles" :key="role.id" :value="role.id">
                                 {{ role.display_name }}
@@ -105,14 +127,14 @@ function getRoleBadge(roleName) {
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <select v-model="statusFilter" @change="applyFilters" class="form-select">
+                        <select id="status_filter_user" name="status_filter" v-model="statusFilter" @change="applyFilters" class="form-select" aria-label="Filter status user">
                             <option value="">Semua Status</option>
                             <option value="1">Aktif</option>
                             <option value="0">Nonaktif</option>
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <select v-model="perPage" @change="applyFilters" class="form-select">
+                        <select id="per_page_user" name="per_page" v-model="perPage" @change="applyFilters" class="form-select" aria-label="Jumlah data per halaman">
                             <option :value="10">10</option>
                             <option :value="20">20</option>
                             <option :value="50">50</option>
@@ -140,7 +162,27 @@ function getRoleBadge(roleName) {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="(user, index) in users.data" :key="user.id">
+                            <template v-if="loading">
+                                <tr v-for="n in skeletonRows" :key="`skel-${n}`" class="skeleton-row">
+                                    <td><span class="skel skel-sm" style="width: 24px;"></span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <span class="skel" style="width: 28px; height: 28px; border-radius: 50%;"></span>
+                                            <span class="skel ms-2" style="width: 110px;"></span>
+                                        </div>
+                                    </td>
+                                    <td><span class="skel" style="width: 140px;"></span></td>
+                                    <td><span class="skel skel-pill" style="width: 70px;"></span></td>
+                                    <td class="text-center"><span class="skel skel-pill" style="width: 50px;"></span></td>
+                                    <td><span class="skel skel-sm" style="width: 70px;"></span></td>
+                                    <td>
+                                        <span class="skel skel-sm" style="width: 28px; height: 28px; border-radius: 4px;"></span>
+                                        <span class="skel skel-sm ms-1" style="width: 28px; height: 28px; border-radius: 4px;"></span>
+                                        <span class="skel skel-sm ms-1" style="width: 28px; height: 28px; border-radius: 4px;"></span>
+                                    </td>
+                                </tr>
+                            </template>
+                            <tr v-else v-for="(user, index) in users.data" :key="user.id">
                                 <td>{{ users.from + index }}</td>
                                 <td>
                                     <div class="d-flex align-items-center">
@@ -177,22 +219,22 @@ function getRoleBadge(roleName) {
                                         class="btn btn-sm btn-soft-info border-0 shadow-sm bx bx-pencil font-size-16"
                                         title="Edit">
                                     </Link>
-                                    <button 
-                                        @click="toggleStatus(user)" 
+                                    <button
+                                        @click="toggleStatus(user)"
                                         class="btn btn-sm btn-soft-warning border-0 shadow-sm bx font-size-16 ms-1"
                                         :class="user.is_active ? 'bx-lock' : 'bx-lock-open'"
                                         :title="user.is_active ? 'Nonaktifkan' : 'Aktifkan'"
-                                        :disabled="user.id === $page.props.auth.user.id"
+                                        :disabled="user.id === $page.props.auth.user.id || busy(`toggle-${user.id}`)"
                                     ></button>
-                                    <button 
-                                        @click="deleteUser(user)" 
+                                    <button
+                                        @click="deleteUser(user)"
                                         class="btn btn-sm btn-soft-danger border-0 shadow-sm bx bx-trash font-size-16 ms-1"
                                         title="Hapus"
-                                        :disabled="user.id === $page.props.auth.user.id"
+                                        :disabled="user.id === $page.props.auth.user.id || busy(`del-${user.id}`)"
                                     ></button>
                                 </td>
                             </tr>
-                            <tr v-if="users.data.length === 0">
+                            <tr v-if="!loading && users.data.length === 0">
                                 <td colspan="7" class="text-center text-muted py-4">
                                     <i class="bx bx-info-circle fs-1 d-block mb-2"></i>
                                     Tidak ada data user

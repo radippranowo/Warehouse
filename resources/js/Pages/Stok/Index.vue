@@ -4,6 +4,9 @@ import { router, useForm, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
 import Modal from '@/Components/Modal.vue';
+import { usePartialReloadLoading } from '@/composables/usePartialReloadLoading';
+
+const { loading } = usePartialReloadLoading('/stok');
 
 const props = defineProps({
     rows: { type: Object, required: true },
@@ -17,6 +20,7 @@ defineOptions({ layout: AppLayout });
 
 const search = ref(props.filters.search ?? '');
 const perPage = ref(props.filters.perPage ?? 25);
+const skeletonRows = computed(() => Math.min(Number(perPage.value) || 10, 10));
 const gudangId = ref(props.filters.gudang_id ?? '');
 const lowOnly = ref(props.filters.low_only ?? false);
 let timer = null;
@@ -30,7 +34,7 @@ function reload(extra = {}) {
         ...extra,
     }, { preserveState: true, preserveScroll: true, replace: true, only: ['rows', 'summary', 'gudang', 'filters'] });
 }
-watch(search, () => { clearTimeout(timer); timer = setTimeout(reload, 300); });
+watch(search, () => { clearTimeout(timer); timer = setTimeout(reload, 400); });
 watch([gudangId, lowOnly], () => reload());
 function changePerPage(n) { perPage.value = n; reload(); }
 
@@ -197,7 +201,7 @@ function submitClear() {
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-2 col-md-3">
+                        <div class="col-lg-3 col-md-3">
                             <label class="form-label mb-1 small fw-medium">Gudang</label>
                             <select id="gudang_filter_stok" name="gudang_id" v-model="gudangId" class="form-select" style="height: 38px;" aria-label="Filter gudang">
                                 <option v-for="g in gudangs" :key="g.id" :value="g.id">
@@ -228,11 +232,26 @@ function submitClear() {
                                     <th class="text-end">Min</th>
                                     <th>Status</th>
                                     <th class="text-start">Nilai</th>
-                                    <th></th>
+                                    <th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="row in rows.data" :key="row.id">
+                                <template v-if="loading">
+                                    <tr v-for="n in skeletonRows" :key="`skel-${n}`" class="skeleton-row">
+                                        <td><span class="skel" style="width: 70px;"></span></td>
+                                        <td><span class="skel" style="width: 80px;"></span></td>
+                                        <td><span class="skel" style="width: 160px;"></span></td>
+                                        <td><span class="skel" style="width: 90px;"></span></td>
+                                        <td><span class="skel" style="width: 80px;"></span></td>
+                                        <td><span class="skel skel-sm" style="width: 40px;"></span></td>
+                                        <td class="text-end"><span class="skel" style="width: 40px;"></span></td>
+                                        <td class="text-end"><span class="skel skel-sm" style="width: 30px;"></span></td>
+                                        <td><span class="skel skel-pill" style="width: 70px;"></span></td>
+                                        <td><span class="skel" style="width: 90px;"></span></td>
+                                        <td><span class="skel skel-sm" style="width: 28px; height: 28px; border-radius: 4px;"></span></td>
+                                    </tr>
+                                </template>
+                                <tr v-else v-for="row in rows.data" :key="row.id">
                                     <td><code>{{ row.kode_barang }}</code></td>
                                     <td>{{ row.part_number || '-' }}</td>
                                     <td>{{ row.nama_barang }}</td>
@@ -264,7 +283,7 @@ function submitClear() {
                                             title="Detail Barang"></Link>
                                     </td>
                                 </tr>
-                                <tr v-if="!rows.data.length">
+                                <tr v-if="!loading && !rows.data.length">
                                     <td colspan="11" class="text-center text-muted py-4">Tidak ada data</td>
                                 </tr>
                             </tbody>
@@ -276,7 +295,7 @@ function submitClear() {
                             <small class="text-muted">
                                 Menampilkan {{ rows.from ?? 0 }}–{{ rows.to ?? 0 }} dari {{ rows.total }}
                             </small>
-                            <select :value="perPage" @change="changePerPage(+$event.target.value)" class="form-select form-select-sm" style="width: 70px;">
+                            <select id="per_page_stok" name="per_page" :value="perPage" @change="changePerPage(+$event.target.value)" class="form-select form-select-sm" style="width: 70px;" aria-label="Jumlah data per halaman">
                                 <option v-for="n in [10, 25, 50, 100]" :key="n" :value="n">{{ n }}</option>
                             </select>
                         </div>

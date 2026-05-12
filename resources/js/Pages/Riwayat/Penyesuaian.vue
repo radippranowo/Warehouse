@@ -1,8 +1,11 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
+import { usePartialReloadLoading } from '@/composables/usePartialReloadLoading';
+
+const { loading } = usePartialReloadLoading('/riwayat/penyesuaian');
 
 const props = defineProps({
     mutasis: { type: Object, required: true },
@@ -17,6 +20,7 @@ const perPage = ref(props.filters.perPage ?? 25);
 const gudangId = ref(props.filters.gudang_id ?? '');
 const dateFrom = ref(props.filters.date_from ?? '');
 const dateTo = ref(props.filters.date_to ?? '');
+const skeletonRows = computed(() => Math.min(Number(perPage.value) || 10, 10));
 
 let timer = null;
 
@@ -34,7 +38,7 @@ function reload() {
     });
 }
 
-watch(search, () => { clearTimeout(timer); timer = setTimeout(reload, 300); });
+watch(search, () => { clearTimeout(timer); timer = setTimeout(reload, 400); });
 watch([perPage, gudangId, dateFrom, dateTo], reload);
 
 function resetFilters() {
@@ -118,38 +122,54 @@ function printMutasi(mutasi) {
                         <table class="table align-middle table-nowrap table-hover">
                             <thead class="table-light">
                                 <tr>
-                                    <th style="width: 50px;">No</th>
-                                    <th>Tanggal</th>
-                                    <th>Nomor</th>
-                                    <th>Gudang</th>
-                                    <th>Items</th>
-                                    <th>Total Qty</th>
-                                    <th>Keterangan</th>
-                                    <th>Dibuat Oleh</th>
-                                    <th style="width: 100px;">Action</th>
+                                    <th style="width: 3%;" class="text-center">No</th>
+                                    <th style="width: 10%;">Tanggal</th>
+                                    <th style="width: 15%;">Nomor</th>
+                                    <th style="width: 15%;">Gudang</th>
+                                    <th style="width: 8%;" class="text-center">Items</th>
+                                    <th style="width: 10%;" class="text-end">Total Qty</th>
+                                    <th style="width: 20%;">Keterangan</th>
+                                    <th style="width: 12%;">Dibuat Oleh</th>
+                                    <th style="width: 7%;" class="text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="(item, i) in mutasis.data" :key="item.id">
-                                    <td>{{ (mutasis.current_page - 1) * mutasis.per_page + i + 1 }}</td>
+                                <template v-if="loading">
+                                    <tr v-for="n in skeletonRows" :key="`skel-${n}`" class="skeleton-row">
+                                        <td class="text-center"><span class="skel skel-sm" style="width: 24px;"></span></td>
+                                        <td><span class="skel" style="width: 80px;"></span></td>
+                                        <td><span class="skel" style="width: 110px;"></span><br><span class="skel skel-sm mt-1" style="width: 70px;"></span></td>
+                                        <td><span class="skel" style="width: 110px;"></span></td>
+                                        <td class="text-center"><span class="skel skel-pill" style="width: 30px;"></span></td>
+                                        <td class="text-end"><span class="skel" style="width: 50px;"></span></td>
+                                        <td><span class="skel" style="width: 160px;"></span></td>
+                                        <td><span class="skel" style="width: 100px;"></span></td>
+                                        <td class="text-center">
+                                            <span class="skel skel-sm" style="width: 28px; height: 28px; border-radius: 4px;"></span>
+                                            <span class="skel skel-sm ms-1" style="width: 28px; height: 28px; border-radius: 4px;"></span>
+                                        </td>
+                                    </tr>
+                                </template>
+                                <tr v-else v-for="(item, i) in mutasis.data" :key="item.id">
+                                    <td class="text-center">{{ (mutasis.current_page - 1) * mutasis.per_page + i + 1 }}</td>
                                     <td>{{ new Date(item.tanggal).toLocaleDateString('id-ID') }}</td>
                                     <td>
                                         <strong>{{ item.nomor_mutasi }}</strong>
                                         <br><small class="text-muted">{{ item.referensi || '-' }}</small>
                                     </td>
                                     <td>{{ item.gudang?.nama_gudang || '-' }}</td>
-                                    <td><span class="badge bg-primary">{{ item.items_count }}</span></td>
-                                    <td>{{ item.total_qty?.toLocaleString('id-ID') || 0 }}</td>
+                                    <td class="text-center"><span class="badge bg-primary">{{ item.items_count }}</span></td>
+                                    <td class="text-end">{{ item.total_qty?.toLocaleString('id-ID') || 0 }}</td>
                                     <td class="text-truncate" style="max-width: 200px;">{{ item.keterangan || '-' }}</td>
                                     <td>{{ item.user?.name || '-' }}</td>
-                                    <td>
+                                    <td class="text-center">
                                         <button class="btn btn-sm btn-soft-info border-0 shadow-sm bx bx-show font-size-16"
                                             @click="viewDetail(item)" title="Detail"></button>
                                         <button class="btn btn-sm btn-soft-secondary border-0 shadow-sm bx bx-printer font-size-16 ms-1"
                                             @click="printMutasi(item)" title="Print"></button>
                                     </td>
                                 </tr>
-                                <tr v-if="!mutasis.data.length">
+                                <tr v-if="!loading && !mutasis.data.length">
                                     <td colspan="9" class="text-center text-muted py-4">Tidak ada data penyesuaian</td>
                                 </tr>
                             </tbody>

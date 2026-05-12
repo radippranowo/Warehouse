@@ -220,12 +220,15 @@ watch(() => props.modelValue, () => { /* no-op, biar tidak menutup saat user pil
                 <div class="p-2 border-bottom ss-search-wrapper">
                     <div class="position-relative">
                         <i class="bx bx-search ss-search-icon"></i>
-                        <input 
+                        <input
                             ref="searchInput"
-                            v-model="search" 
-                            type="text" 
+                            v-model="search"
+                            type="text"
+                            name="ss_search"
+                            autocomplete="off"
+                            :aria-label="searchPlaceholder || 'Cari'"
                             class="form-control form-control-sm ss-search-input"
-                            :placeholder="searchPlaceholder" 
+                            :placeholder="searchPlaceholder"
                             @keydown="onKeyDown">
                         <small v-if="filtered.length > 0" class="ss-result-count">
                             {{ filtered.length }} hasil

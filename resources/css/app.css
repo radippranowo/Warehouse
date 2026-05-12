@@ -1,3 +1,27 @@
 /* @tailwind base;
 @tailwind components;
 @tailwind utilities; */
+
+/* === SKELETON LOADER (global) === */
+/* Dipakai di tabel saat partial reload (search/filter). Lihat composable
+   resources/js/composables/usePartialReloadLoading.js */
+.skel {
+    display: inline-block;
+    height: 14px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #eef0f3 25%, #f6f7f9 50%, #eef0f3 75%);
+    background-size: 200% 100%;
+    animation: skel-shimmer 1.2s ease-in-out infinite;
+}
+.skel-sm    { height: 10px; }
+.skel-pill  { height: 18px; border-radius: 999px; }
+.skel-block { height: 32px; border-radius: 6px; }
+
+.skeleton-row td {
+    padding: 12px 8px;
+}
+
+@keyframes skel-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}

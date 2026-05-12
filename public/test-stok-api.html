@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API Stok</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+        .error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test API Stok Endpoint</h1>
+    
+    <div class="form-group">
+        <label for="barangId">Barang ID:</label>
+        <input type="number" id="barangId" value="1" placeholder="Masukkan ID Barang">
+    </div>
+    
+    <div class="form-group">
+        <label for="gudangId">Gudang ID:</label>
+        <input type="number" id="gudangId" value="1" placeholder="Masukkan ID Gudang">
+    </div>
+    
+    <button onclick="testAPI()">Test API</button>
+    
+    <div id="result"></div>
+
+    <script>
+        async function testAPI() {
+            const barangId = document.getElementById('barangId').value;
+            const gudangId = document.getElementById('gudangId').value;
+            const resultDiv = document.getElementById('result');
+            
+            if (!barangId || !gudangId) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = '<strong>Error:</strong> Barang ID dan Gudang ID harus diisi';
+                return;
+            }
+            
+            resultDiv.className = 'result';
+            resultDiv.innerHTML = '<strong>Loading...</strong> Mengambil data dari API...';
+            
+            try {
+                const url = `/api/v1/stok/${barangId}/${gudangId}`;
+                console.log('Fetching:', url);
+                
+                const response = await fetch(url);
+                console.log('Response status:', response.status);
+                
+                const data = await response.json();
+                console.log('Response data:', data);
+                
+                if (response.ok && data.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <strong>✓ Success!</strong><br><br>
+                        <strong>URL:</strong> ${url}<br>
+                        <strong>Barang ID:</strong> ${data.barang_id}<br>
+                        <strong>Gudang ID:</strong> ${data.gudang_id}<br>
+                        <strong>Stok:</strong> ${data.stok}<br>
+                        <strong>Min Stok:</strong> ${data.min_stok}<br><br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `
+                        <strong>✗ Error!</strong><br><br>
+                        <strong>Status:</strong> ${response.status}<br>
+                        <strong>Response:</strong><br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <strong>✗ Error!</strong><br><br>
+                    <strong>Message:</strong> ${error.message}<br>
+                    <strong>Stack:</strong><br>
+                    <pre>${error.stack}</pre>
+                `;
+            }
+        }
+        
+        // Auto test on load
+        window.addEventListener('load', () => {
+            console.log('Page loaded, ready to test API');
+        });
+    </script>
+</body>
+</html>

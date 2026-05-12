@@ -4,7 +4,7 @@ import { computed } from 'vue';
  * Composable untuk form transaksi barang (masuk/keluar)
  * Menghindari duplikasi kode dan meningkatkan maintainability
  */
-export function useTransaksiForm(form, barangs) {
+export function useTransaksiForm(form, barangs, tipeTransaksi = null) {
     // Cache barang lookup untuk performa O(1) vs O(n)
     const barangMap = computed(() => {
         const map = new Map();
@@ -41,8 +41,17 @@ export function useTransaksiForm(form, barangs) {
                 errors.qty = 'Qty harus > 0';
             }
             
-            if (row.harga_satuan < 0) {
-                errors.harga_satuan = 'Harga tidak boleh negatif';
+            // Validasi harga berbeda untuk barang masuk dan keluar
+            if (tipeTransaksi === 'in') {
+                // Barang masuk: harga harus > 0
+                if (!row.harga_satuan || row.harga_satuan <= 0) {
+                    errors.harga_satuan = 'Harga harus > 0';
+                }
+            } else {
+                // Barang keluar: harga tidak boleh negatif
+                if (row.harga_satuan < 0) {
+                    errors.harga_satuan = 'Harga tidak boleh negatif';
+                }
             }
             
             return errors;
@@ -65,7 +74,11 @@ export function useTransaksiForm(form, barangs) {
 
     // Format currency helper
     function formatCurrency(value) {
-        return 'Rp ' + (value || 0).toLocaleString('id-ID');
+        const rounded = Math.round(value || 0);
+        return 'Rp ' + rounded.toLocaleString('id-ID', { 
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0 
+        });
     }
 
     // Format number helper

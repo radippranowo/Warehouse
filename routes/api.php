@@ -28,6 +28,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/', [StokApiController::class, 'index']); // List stok per gudang
         Route::get('/summary', [StokApiController::class, 'summary']); // Summary stok
         Route::get('/low-stock', [StokApiController::class, 'lowStock']); // Stok rendah
+        Route::get('/{barangId}/{gudangId}', [StokApiController::class, 'getStock']); // Stok spesifik barang di gudang
     });
 
     // Mutasi/Transaksi Endpoints
