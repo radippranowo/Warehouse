@@ -3,17 +3,17 @@ import { ref, watch, computed } from 'vue';
 import { router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
+import Rupiah from '@/Components/Rupiah.vue';
 import { useSingleFlight } from '@/composables/useSingleFlight';
-import { usePartialReloadLoading } from '@/composables/usePartialReloadLoading';
 
 const { busy, run } = useSingleFlight();
-const { loading } = usePartialReloadLoading('/riwayat/barang-keluar');
 
 const props = defineProps({
     mutasis: { type: Object, required: true },
     filters: { type: Object, required: true },
     gudangs: { type: Array, default: () => [] },
 });
+
 
 defineOptions({ layout: AppLayout });
 
@@ -22,7 +22,6 @@ const perPage = ref(props.filters.perPage ?? 25);
 const gudangId = ref(props.filters.gudang_id ?? '');
 const dateFrom = ref(props.filters.date_from ?? '');
 const dateTo = ref(props.filters.date_to ?? '');
-const skeletonRows = computed(() => Math.min(Number(perPage.value) || 10, 10));
 
 // Modal pembatalan
 const showCancelModal = ref(false);
@@ -51,10 +50,6 @@ watch([perPage, gudangId, dateFrom, dateTo], reload);
 
 function changePerPage(n) { perPage.value = n; }
 
-function fmtRpNumber(v) {
-    if (v === null || v === undefined || v === '') return '0';
-    return Number(v).toLocaleString('id-ID');
-}
 
 function viewDetail(mutasi) {
     router.get(`/transaksi/${mutasi.id}`);
@@ -111,6 +106,7 @@ function submitCancel() {
         onSuccess: () => {
             closeCancelModal();
             window.toast?.success('Transaksi berhasil dibatalkan');
+            router.flushAll();
         },
         onError: (errors) => {
             if (errors.cancellation_reason) {
@@ -190,24 +186,7 @@ function submitCancel() {
                                 </tr>
                             </thead>
                             <tbody>
-                                <template v-if="loading">
-                                    <tr v-for="n in skeletonRows" :key="`skel-${n}`" class="skeleton-row">
-                                        <td><span class="skel skel-sm" style="width: 24px;"></span></td>
-                                        <td><span class="skel" style="width: 80px;"></span></td>
-                                        <td><span class="skel" style="width: 110px;"></span><br><span class="skel skel-sm mt-1" style="width: 70px;"></span></td>
-                                        <td><span class="skel" style="width: 120px;"></span></td>
-                                        <td><span class="skel skel-pill" style="width: 30px;"></span></td>
-                                        <td><span class="skel" style="width: 50px;"></span></td>
-                                        <td><span class="skel" style="width: 100px;"></span></td>
-                                        <td><span class="skel" style="width: 100px;"></span></td>
-                                        <td>
-                                            <span class="skel skel-sm" style="width: 28px; height: 28px; border-radius: 4px;"></span>
-                                            <span class="skel skel-sm ms-1" style="width: 28px; height: 28px; border-radius: 4px;"></span>
-                                            <span class="skel skel-sm ms-1" style="width: 28px; height: 28px; border-radius: 4px;"></span>
-                                        </td>
-                                    </tr>
-                                </template>
-                                <tr v-else v-for="(item, i) in mutasis.data" :key="item.id">
+                                <tr v-for="(item, i) in mutasis.data" :key="item.id">
                                     <td>{{ (mutasis.current_page - 1) * mutasis.per_page + i + 1 }}</td>
                                     <td>{{ new Date(item.tanggal).toLocaleDateString('id-ID') }}</td>
                                     <td>
@@ -217,7 +196,7 @@ function submitCancel() {
                                     <td>{{ item.gudang?.nama_gudang || '-' }}</td>
                                     <td><span class="badge bg-primary">{{ item.items_count }}</span></td>
                                     <td>{{ item.total_qty?.toLocaleString('id-ID') || 0 }}</td>
-                                    <td><strong><span class="rupiah-format"><span class="rp">Rp</span><span class="amount">{{ fmtRpNumber(item.total_value) }}</span></span></strong></td>
+                                    <td><Rupiah :value="item.total_value" bold /></td>
                                     <td>{{ item.user?.name || '-' }}</td>
                                     <td>
                                         <button class="btn btn-sm btn-soft-info border-0 shadow-sm bx bx-show font-size-16"
@@ -228,7 +207,7 @@ function submitCancel() {
                                             @click="openCancelModal(item)" title="Batalkan Transaksi"></button>
                                     </td>
                                 </tr>
-                                <tr v-if="!loading && !mutasis.data.length">
+                                <tr v-if="!mutasis.data.length">
                                     <td colspan="9" class="text-center text-muted py-4">Tidak ada data pengeluaran</td>
                                 </tr>
                             </tbody>
@@ -312,20 +291,4 @@ function submitCancel() {
     border-radius: 0.25rem !important;
 }
 
-.rupiah-format {
-    display: inline-flex;
-    justify-content: space-between;
-    width: 100%;
-    gap: 0.5rem;
-}
-
-.rupiah-format .rp {
-    text-align: left;
-    flex-shrink: 0;
-}
-
-.rupiah-format .amount {
-    text-align: right;
-    flex-grow: 1;
-}
 </style>

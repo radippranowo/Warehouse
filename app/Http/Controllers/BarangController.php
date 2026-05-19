@@ -63,9 +63,7 @@ class BarangController extends Controller
             });
         }
 
-        $barangs = $query->latest('id')
-            ->paginate($perPage)
-            ->withQueryString();
+        $barangs = $query->latest('id')->paginate($perPage)->withQueryString();
 
         return Inertia::render('Barang/Index', [
             'barangs' => $barangs,
@@ -276,12 +274,23 @@ class BarangController extends Controller
             if ($clearMutasi) {
                 $deleted['mutasi_items'] = DB::table('stok_mutasi_items')->count();
                 $deleted['mutasi']       = DB::table('stok_mutasis')->count();
+                // Bersihkan FIFO lots & consumption juga (cascade dari stok_mutasis,
+                // tapi explicit untuk konsistensi & idempotency).
+                DB::table('stok_lot_consumptions')->delete();
+                DB::table('stok_lots')->delete();
                 DB::table('stok_mutasi_items')->delete();
                 DB::table('stok_mutasis')->delete();
-            }
-            if ($clearBarang || $clearGudang) {
+                // Reset barang_stoks juga — karena tanpa mutasi history, angka stok
+                // tidak lagi punya audit trail dan akan rancu di laporan.
                 $deleted['barang_stoks'] = DB::table('barang_stoks')->count();
                 DB::table('barang_stoks')->delete();
+            }
+            if ($clearBarang || $clearGudang) {
+                // Kalau belum di-clear oleh blok mutasi di atas, clear sekarang.
+                if (!isset($deleted['barang_stoks'])) {
+                    $deleted['barang_stoks'] = DB::table('barang_stoks')->count();
+                    DB::table('barang_stoks')->delete();
+                }
             }
             if ($clearBarang) {
                 $deleted['barang'] = DB::table('barangs')->count();

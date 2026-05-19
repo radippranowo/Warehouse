@@ -2,6 +2,7 @@
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { computed } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
+import Rupiah from '@/Components/Rupiah.vue';
 
 const props = defineProps({
     stats: { type: Object, required: true },
@@ -21,11 +22,6 @@ const greeting = computed(() => {
 });
 
 const stokKritisCount = computed(() => (props.stats.stok_kosong || 0) + (props.stats.stok_rendah || 0));
-
-function fmtRpNumber(v) {
-    if (v === null || v === undefined || v === '') return '0';
-    return Number(v).toLocaleString('id-ID');
-}
 
 function fmtNumber(v) {
     if (v === null || v === undefined || v === '') return '0';
@@ -328,7 +324,7 @@ const stokPercentage = computed(() => {
                                     <p class="text-muted mb-1 small">Barang Masuk (Bulan Ini)</p>
                                     <h4 class="mb-0 fw-bold text-dark">{{ fmtNumber(stats.transaksi_masuk_bulan_ini) }}</h4>
                                     <small class="text-muted">
-                                        <span class="rupiah-inline"><span class="rp">Rp</span> {{ fmtRpNumber(stats.nilai_masuk_bulan_ini) }}</span>
+                                        <Rupiah :value="stats.nilai_masuk_bulan_ini" inline />
                                     </small>
                                 </div>
                             </div>
@@ -348,7 +344,7 @@ const stokPercentage = computed(() => {
                                     <p class="text-muted mb-1 small">Barang Keluar (Bulan Ini)</p>
                                     <h4 class="mb-0 fw-bold text-dark">{{ fmtNumber(stats.transaksi_keluar_bulan_ini) }}</h4>
                                     <small class="text-muted">
-                                        <span class="rupiah-inline"><span class="rp">Rp</span> {{ fmtRpNumber(stats.nilai_keluar_bulan_ini) }}</span>
+                                        <Rupiah :value="stats.nilai_keluar_bulan_ini" inline />
                                     </small>
                                 </div>
                             </div>
@@ -454,7 +450,7 @@ const stokPercentage = computed(() => {
                                                     </span>
                                                     {{ item.nama_gudang }} • {{ item.total_qty }} item
                                                     <span v-if="item.total_value > 0">
-                                                        • <span class="rupiah-inline"><span class="rp">Rp</span> {{ fmtRpNumber(item.total_value) }}</span>
+                                                        • <Rupiah :value="item.total_value" inline />
                                                     </span>
                                                 </p>
                                                 <small class="text-muted">{{ item.user_name }} • {{ fmtDate(item.tanggal) }}</small>
@@ -519,15 +515,6 @@ const stokPercentage = computed(() => {
     display: inline-block;
     font-size: 1.5rem;
     line-height: 1;
-}
-
-.rupiah-inline {
-    display: inline;
-    white-space: nowrap;
-}
-
-.rupiah-inline .rp {
-    margin-right: 2px;
 }
 
 .timeline-item {

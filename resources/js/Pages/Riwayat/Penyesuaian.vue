@@ -3,15 +3,13 @@ import { ref, watch, computed } from 'vue';
 import { router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
-import { usePartialReloadLoading } from '@/composables/usePartialReloadLoading';
-
-const { loading } = usePartialReloadLoading('/riwayat/penyesuaian');
 
 const props = defineProps({
     mutasis: { type: Object, required: true },
     filters: { type: Object, required: true },
     gudangs: { type: Array, default: () => [] },
 });
+
 
 defineOptions({ layout: AppLayout });
 
@@ -20,7 +18,6 @@ const perPage = ref(props.filters.perPage ?? 25);
 const gudangId = ref(props.filters.gudang_id ?? '');
 const dateFrom = ref(props.filters.date_from ?? '');
 const dateTo = ref(props.filters.date_to ?? '');
-const skeletonRows = computed(() => Math.min(Number(perPage.value) || 10, 10));
 
 let timer = null;
 
@@ -134,23 +131,7 @@ function printMutasi(mutasi) {
                                 </tr>
                             </thead>
                             <tbody>
-                                <template v-if="loading">
-                                    <tr v-for="n in skeletonRows" :key="`skel-${n}`" class="skeleton-row">
-                                        <td class="text-center"><span class="skel skel-sm" style="width: 24px;"></span></td>
-                                        <td><span class="skel" style="width: 80px;"></span></td>
-                                        <td><span class="skel" style="width: 110px;"></span><br><span class="skel skel-sm mt-1" style="width: 70px;"></span></td>
-                                        <td><span class="skel" style="width: 110px;"></span></td>
-                                        <td class="text-center"><span class="skel skel-pill" style="width: 30px;"></span></td>
-                                        <td class="text-end"><span class="skel" style="width: 50px;"></span></td>
-                                        <td><span class="skel" style="width: 160px;"></span></td>
-                                        <td><span class="skel" style="width: 100px;"></span></td>
-                                        <td class="text-center">
-                                            <span class="skel skel-sm" style="width: 28px; height: 28px; border-radius: 4px;"></span>
-                                            <span class="skel skel-sm ms-1" style="width: 28px; height: 28px; border-radius: 4px;"></span>
-                                        </td>
-                                    </tr>
-                                </template>
-                                <tr v-else v-for="(item, i) in mutasis.data" :key="item.id">
+                                <tr v-for="(item, i) in mutasis.data" :key="item.id">
                                     <td class="text-center">{{ (mutasis.current_page - 1) * mutasis.per_page + i + 1 }}</td>
                                     <td>{{ new Date(item.tanggal).toLocaleDateString('id-ID') }}</td>
                                     <td>
@@ -169,7 +150,7 @@ function printMutasi(mutasi) {
                                             @click="printMutasi(item)" title="Print"></button>
                                     </td>
                                 </tr>
-                                <tr v-if="!loading && !mutasis.data.length">
+                                <tr v-if="!mutasis.data.length">
                                     <td colspan="9" class="text-center text-muted py-4">Tidak ada data penyesuaian</td>
                                 </tr>
                             </tbody>

@@ -2,26 +2,30 @@
 @tailwind components;
 @tailwind utilities; */
 
-/* === SKELETON LOADER (global) === */
-/* Dipakai di tabel saat partial reload (search/filter). Lihat composable
-   resources/js/composables/usePartialReloadLoading.js */
-.skel {
-    display: inline-block;
-    height: 14px;
-    border-radius: 4px;
-    background: linear-gradient(90deg, #eef0f3 25%, #f6f7f9 50%, #eef0f3 75%);
-    background-size: 200% 100%;
-    animation: skel-shimmer 1.2s ease-in-out infinite;
+/* === RUPIAH FORMAT === */
+/* Default: flex layout — "Rp" di kiri, nilai di kanan, sejajar dalam cell tabel.
+   Dipakai via komponen <Rupiah :value="..." /> di resources/js/Components/Rupiah.vue */
+.rupiah-format {
+    display: inline-flex;
+    justify-content: space-between;
+    width: 100%;
+    gap: 0.5rem;
+    font-variant-numeric: tabular-nums;
 }
-.skel-sm    { height: 10px; }
-.skel-pill  { height: 18px; border-radius: 999px; }
-.skel-block { height: 32px; border-radius: 6px; }
-
-.skeleton-row td {
-    padding: 12px 8px;
+.rupiah-format .rp {
+    text-align: left;
+    flex-shrink: 0;
+    color: #6c757d;
 }
-
-@keyframes skel-shimmer {
-    0%   { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+.rupiah-format .amount {
+    text-align: right;
+    flex-grow: 1;
+}
+/* Variant inline — "Rp" langsung di samping nilai (untuk text flow, bukan cell). */
+.rupiah-format.rupiah-inline {
+    display: inline;
+    width: auto;
+}
+.rupiah-format.rupiah-inline .rp {
+    margin-right: 0.25rem;
 }

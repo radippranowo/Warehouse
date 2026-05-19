@@ -3,9 +3,7 @@ import { ref, watch, computed } from 'vue';
 import { router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
-import { usePartialReloadLoading } from '@/composables/usePartialReloadLoading';
-
-const { loading } = usePartialReloadLoading('/laporan-keuntungan');
+import Rupiah from '@/Components/Rupiah.vue';
 
 const props = defineProps({
     items: { type: Object, required: true },
@@ -14,11 +12,11 @@ const props = defineProps({
     filters: { type: Object, required: true },
 });
 
+
 defineOptions({ layout: AppLayout });
 
 const search = ref(props.filters.search ?? '');
 const perPage = ref(props.filters.per_page ?? 10);
-const skeletonRows = computed(() => Math.min(Number(perPage.value) || 10, 10));
 const gudangId = ref(props.filters.gudang_id ?? '');
 const startDate = ref(props.filters.start_date ?? '');
 const endDate = ref(props.filters.end_date ?? '');
@@ -50,16 +48,6 @@ watch([gudangId, startDate, endDate], () => reload());
 function changePerPage(n) { 
     perPage.value = n; 
     reload(); 
-}
-
-function fmtRp(v) {
-    if (v === null || v === undefined || v === '') return 'Rp 0';
-    return 'Rp ' + Number(v).toLocaleString('id-ID');
-}
-
-function fmtRpNumber(v) {
-    if (v === null || v === undefined || v === '') return '0';
-    return Number(v).toLocaleString('id-ID');
 }
 
 function fmtNumber(v) {
@@ -127,7 +115,7 @@ function getMarginClass(keuntungan, modal) {
                             <div class="flex-grow-1 ms-3">
                                 <p class="text-muted mb-1 small">Total Pembelian</p>
                                 <h5 class="mb-0 fw-bold">
-                                    <span class="rupiah-format"><span class="rp">Rp</span><span class="amount">{{ fmtRpNumber(summary.total_modal) }}</span></span>
+                                    <Rupiah :value="summary.total_modal" bold />
                                 </h5>
                             </div>
                         </div>
@@ -146,7 +134,7 @@ function getMarginClass(keuntungan, modal) {
                             <div class="flex-grow-1 ms-3">
                                 <p class="text-muted mb-1 small">Total Penjualan</p>
                                 <h5 class="mb-0 fw-bold">
-                                    <span class="rupiah-format"><span class="rp">Rp</span><span class="amount">{{ fmtRpNumber(summary.total_penjualan) }}</span></span>
+                                    <Rupiah :value="summary.total_penjualan" bold />
                                 </h5>
                             </div>
                         </div>
@@ -165,7 +153,7 @@ function getMarginClass(keuntungan, modal) {
                             <div class="flex-grow-1 ms-3">
                                 <p class="text-muted mb-1 small">Total Keuntungan</p>
                                 <h5 class="mb-0 fw-bold text-success">
-                                    <span class="rupiah-format"><span class="rp">Rp</span><span class="amount">{{ fmtRpNumber(summary.total_keuntungan) }}</span></span>
+                                    <Rupiah :value="summary.total_keuntungan" bold />
                                 </h5>
                                 <small class="text-muted">Margin: {{ summary.margin_persen.toFixed(1) }}%</small>
                             </div>
@@ -254,28 +242,13 @@ function getMarginClass(keuntungan, modal) {
                             </tr>
                         </thead>
                         <tbody>
-                            <template v-if="loading">
-                                <tr v-for="n in skeletonRows" :key="`skel-${n}`" class="skeleton-row">
-                                    <td class="px-3 py-2"><span class="skel" style="width: 80px;"></span></td>
-                                    <td class="px-3 py-2"><span class="skel skel-pill" style="width: 90px;"></span></td>
-                                    <td class="px-3 py-2"><span class="skel" style="width: 70px;"></span></td>
-                                    <td class="px-3 py-2"><span class="skel" style="width: 150px;"></span></td>
-                                    <td class="px-3 py-2"><span class="skel" style="width: 90px;"></span></td>
-                                    <td class="px-3 py-2 text-end"><span class="skel" style="width: 50px;"></span></td>
-                                    <td class="px-3 py-2 text-end"><span class="skel" style="width: 80px;"></span></td>
-                                    <td class="px-3 py-2 text-end"><span class="skel" style="width: 80px;"></span></td>
-                                    <td class="px-3 py-2 text-end"><span class="skel" style="width: 70px;"></span></td>
-                                    <td class="px-3 py-2 text-end"><span class="skel" style="width: 80px;"></span></td>
-                                    <td class="px-3 py-2 text-center"><span class="skel skel-pill" style="width: 50px;"></span></td>
-                                </tr>
-                            </template>
-                            <tr v-else-if="items.data.length === 0">
+                            <tr v-if="items.data.length === 0">
                                 <td colspan="11" class="text-center py-4 text-muted">
                                     <i class="bx bx-info-circle fs-4 d-block mb-2"></i>
                                     Tidak ada data
                                 </td>
                             </tr>
-                            <tr v-else v-for="item in items.data" :key="item.id">
+                            <tr v-for="item in items.data" :key="item.id">
                                 <td class="px-3 py-2 small">{{ fmtDate(item.tanggal) }}</td>
                                 <td class="px-3 py-2 small">
                                     <span class="badge bg-primary bg-opacity-10 text-primary">
@@ -287,16 +260,16 @@ function getMarginClass(keuntungan, modal) {
                                 <td class="px-3 py-2 small">{{ item.nama_gudang }}</td>
                                 <td class="px-3 py-2 small text-end">{{ fmtNumber(item.qty) }} {{ item.satuan }}</td>
                                 <td class="px-3 py-2 small text-end">
-                                    <span class="rupiah-format"><span class="rp">Rp</span><span class="amount">{{ fmtRpNumber(item.harga_beli) }}</span></span>
+                                    <Rupiah :value="item.harga_beli" />
                                 </td>
                                 <td class="px-3 py-2 small text-end fw-medium">
-                                    <span class="rupiah-format"><span class="rp">Rp</span><span class="amount">{{ fmtRpNumber(item.harga_jual_aktual) }}</span></span>
+                                    <Rupiah :value="item.harga_jual_aktual" />
                                 </td>
                                 <td class="px-3 py-2 small text-end" :class="getMarginClass(item.keuntungan_per_unit, item.harga_beli)">
-                                    <span class="rupiah-format"><span class="rp">Rp</span><span class="amount">{{ fmtRpNumber(item.keuntungan_per_unit) }}</span></span>
+                                    <Rupiah :value="item.keuntungan_per_unit" />
                                 </td>
                                 <td class="px-3 py-2 small text-end fw-bold" :class="getMarginClass(item.total_keuntungan, item.total_modal)">
-                                    <span class="rupiah-format"><span class="rp">Rp</span><span class="amount">{{ fmtRpNumber(item.total_keuntungan) }}</span></span>
+                                    <Rupiah :value="item.total_keuntungan" />
                                 </td>
                                 <td class="px-3 py-2 small text-center">
                                     <span 
@@ -349,22 +322,6 @@ function getMarginClass(keuntungan, modal) {
     background-color: rgba(0, 0, 0, 0.02);
 }
 
-.rupiah-format {
-    display: inline-flex;
-    justify-content: space-between;
-    width: 100%;
-    gap: 0.5rem;
-}
-
-.rupiah-format .rp {
-    text-align: left;
-    flex-shrink: 0;
-}
-
-.rupiah-format .amount {
-    text-align: right;
-    flex-grow: 1;
-}
 
 .badge-soft-danger {
     background-color: rgba(220, 53, 69, 0.1);

@@ -86,6 +86,7 @@ function submit() {
             preserveScroll: true,
             onSuccess: () => {
                 window.toast?.success('Transfer berhasil disimpan');
+                router.flushAll();
                 router.visit('/riwayat/transfer');
             },
             onError: () => {

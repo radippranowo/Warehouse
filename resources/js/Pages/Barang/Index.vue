@@ -5,15 +5,14 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
 import Modal from '@/Components/Modal.vue';
 import SearchSelect from '@/Components/SearchSelect.vue';
-import { usePartialReloadLoading } from '@/composables/usePartialReloadLoading';
-
-const { loading } = usePartialReloadLoading('/barang');
+import Rupiah from '@/Components/Rupiah.vue';
 
 const props = defineProps({
     barangs: { type: Object, required: true },
     filters: { type: Object, required: true },
     masters: { type: Object, default: () => ({ categories: [], merks: [], groups: [] }) },
 });
+
 
 const masters = computed(() => ({
     categories:    props.masters.categories    ?? [],
@@ -46,7 +45,6 @@ const displayBarangs = computed(() => ({
 // --- search & perPage (URL-synced, debounced) -----------------------------
 const search = ref(props.filters.search ?? '');
 const perPage = ref(props.filters.perPage ?? 25);
-const skeletonRows = computed(() => Math.min(Number(perPage.value) || 10, 10));
 let searchTimer = null;
 
 function reload(extra = {}) {
@@ -301,10 +299,6 @@ function destroy(item) {
     }
 }
 
-function fmtRp(v) {
-    if (v === null || v === undefined || v === '') return 'Rp 0';
-    return 'Rp ' + Number(v).toLocaleString('id-ID');
-}
 </script>
 
 <template>
@@ -395,25 +389,7 @@ function fmtRp(v) {
                                 </tr>
                             </thead>
                             <TransitionGroup tag="tbody" :name="animateRows ? 'row-fade' : ''">
-                                <tr v-if="loading" v-for="n in skeletonRows" :key="`skel-${n}`" class="skeleton-row">
-                                    <td><span class="skel skel-sm" style="width: 18px; height: 18px;"></span></td>
-                                    <td><span class="skel skel-sm" style="width: 20px;"></span></td>
-                                    <td><span class="skel" style="width: 80px;"></span></td>
-                                    <td><span class="skel" style="width: 80px;"></span></td>
-                                    <td><span class="skel" style="width: 160px;"></span></td>
-                                    <td><span class="skel" style="width: 90px;"></span></td>
-                                    <td><span class="skel" style="width: 90px;"></span></td>
-                                    <td><span class="skel" style="width: 70px;"></span></td>
-                                    <td><span class="skel" style="width: 70px;"></span></td>
-                                    <td><span class="skel skel-sm" style="width: 40px;"></span></td>
-                                    <td><span class="skel skel-pill" style="width: 40px;"></span></td>
-                                    <td><span class="skel" style="width: 70px;"></span></td>
-                                    <td>
-                                        <span class="skel skel-sm" style="width: 28px; height: 28px; border-radius: 4px;"></span>
-                                        <span class="skel skel-sm ms-1" style="width: 28px; height: 28px; border-radius: 4px;"></span>
-                                    </td>
-                                </tr>
-                                <tr v-else v-for="(item, i) in displayBarangs.data" :key="item.id" :class="{ 'table-active': selected.has(item.id) }">
+                                <tr v-for="(item, i) in displayBarangs.data" :key="item.id" :class="{ 'table-active': selected.has(item.id) }">
                                     <td>
                                         <input
                                             :id="`select_barang_${item.id}`"
@@ -439,7 +415,7 @@ function fmtRp(v) {
                                             {{ item.stok_total ?? 0 }}
                                         </span>
                                     </td>
-                                    <td>{{ fmtRp(item.harga_jual) }}</td>
+                                    <td><Rupiah :value="item.harga_jual" /></td>
                                     <td>
                                         <Link :href="`/barang/${item.id}`"
                                             class="btn btn-sm btn-soft-primary border-0 shadow-sm bx bx-show font-size-16"

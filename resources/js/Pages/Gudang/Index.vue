@@ -4,14 +4,12 @@ import { router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';
-import { usePartialReloadLoading } from '@/composables/usePartialReloadLoading';
-
-const { loading } = usePartialReloadLoading('/gudang');
 
 const props = defineProps({
     gudangs: { type: Object, required: true },
     filters: { type: Object, required: true },
 });
+
 
 defineOptions({ layout: AppLayout });
 
@@ -34,7 +32,6 @@ const displayItems = computed(() => ({
 
 const search  = ref(props.filters.search ?? '');
 const perPage = ref(props.filters.perPage ?? 25);
-const skeletonRows = computed(() => Math.min(Number(perPage.value) || 10, 10));
 let timer = null;
 
 function reload(extra = {}) {
@@ -362,20 +359,7 @@ function destroy(item) {
                                 </tr>
                             </thead>
                             <TransitionGroup tag="tbody" :name="animateRows ? 'row-fade' : ''">
-                                <tr v-if="loading" v-for="n in skeletonRows" :key="`skel-${n}`" class="skeleton-row">
-                                    <td><span class="skel skel-sm" style="width: 18px; height: 18px;"></span></td>
-                                    <td><span class="skel skel-sm" style="width: 24px;"></span></td>
-                                    <td><span class="skel" style="width: 70px;"></span></td>
-                                    <td><span class="skel" style="width: 120px;"></span></td>
-                                    <td><span class="skel" style="width: 200px;"></span></td>
-                                    <td><span class="skel" style="width: 100px;"></span></td>
-                                    <td><span class="skel skel-pill" style="width: 60px;"></span></td>
-                                    <td>
-                                        <span class="skel skel-sm" style="width: 28px; height: 28px; border-radius: 4px;"></span>
-                                        <span class="skel skel-sm ms-1" style="width: 28px; height: 28px; border-radius: 4px;"></span>
-                                    </td>
-                                </tr>
-                                <tr v-else v-for="(item, i) in displayItems.data" :key="item.id ?? item.kode_gudang"
+                                <tr v-for="(item, i) in displayItems.data" :key="item.id ?? item.kode_gudang"
                                     :class="{ 'table-active': selected.has(item.id) }">
                                     <td>
                                         <input type="checkbox" class="form-check-input"
@@ -400,7 +384,7 @@ function destroy(item) {
                                             @click="destroy(item)"></button>
                                     </td>
                                 </tr>
-                                <tr v-if="!loading && !displayItems.data.length" key="empty">
+                                <tr v-if="!displayItems.data.length" key="empty">
                                     <td colspan="8" class="text-center text-muted py-4">Tidak ada data</td>
                                 </tr>
                             </TransitionGroup>

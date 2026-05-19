@@ -4,9 +4,7 @@ import { router, useForm, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
 import Modal from '@/Components/Modal.vue';
-import { usePartialReloadLoading } from '@/composables/usePartialReloadLoading';
-
-const { loading } = usePartialReloadLoading('/stok');
+import Rupiah from '@/Components/Rupiah.vue';
 
 const props = defineProps({
     rows: { type: Object, required: true },
@@ -16,11 +14,11 @@ const props = defineProps({
     filters: { type: Object, required: true },
 });
 
+
 defineOptions({ layout: AppLayout });
 
 const search = ref(props.filters.search ?? '');
 const perPage = ref(props.filters.perPage ?? 25);
-const skeletonRows = computed(() => Math.min(Number(perPage.value) || 10, 10));
 const gudangId = ref(props.filters.gudang_id ?? '');
 const lowOnly = ref(props.filters.low_only ?? false);
 let timer = null;
@@ -38,10 +36,6 @@ watch(search, () => { clearTimeout(timer); timer = setTimeout(reload, 400); });
 watch([gudangId, lowOnly], () => reload());
 function changePerPage(n) { perPage.value = n; reload(); }
 
-function fmtRp(v) {
-    if (v === null || v === undefined || v === '') return 'Rp 0';
-    return 'Rp ' + Number(v).toLocaleString('id-ID');
-}
 function statusOf(row) {
     const stok = Number(row.stok_gudang) || 0;
     const min = Number(row.min_stok_efektif) || 0;
@@ -183,7 +177,7 @@ function submitClear() {
                             <div class="card bg-light border-0 mb-0">
                                 <div class="card-body py-2">
                                     <small class="text-muted">Nilai Stok (harga jual)</small>
-                                    <h4 class="mb-0 text-primary">{{ fmtRp(summary.total_value) }}</h4>
+                                    <h4 class="mb-0 text-primary"><Rupiah :value="summary.total_value" inline bold /></h4>
                                 </div>
                             </div>
                         </div>
@@ -236,22 +230,7 @@ function submitClear() {
                                 </tr>
                             </thead>
                             <tbody>
-                                <template v-if="loading">
-                                    <tr v-for="n in skeletonRows" :key="`skel-${n}`" class="skeleton-row">
-                                        <td><span class="skel" style="width: 70px;"></span></td>
-                                        <td><span class="skel" style="width: 80px;"></span></td>
-                                        <td><span class="skel" style="width: 160px;"></span></td>
-                                        <td><span class="skel" style="width: 90px;"></span></td>
-                                        <td><span class="skel" style="width: 80px;"></span></td>
-                                        <td><span class="skel skel-sm" style="width: 40px;"></span></td>
-                                        <td class="text-end"><span class="skel" style="width: 40px;"></span></td>
-                                        <td class="text-end"><span class="skel skel-sm" style="width: 30px;"></span></td>
-                                        <td><span class="skel skel-pill" style="width: 70px;"></span></td>
-                                        <td><span class="skel" style="width: 90px;"></span></td>
-                                        <td><span class="skel skel-sm" style="width: 28px; height: 28px; border-radius: 4px;"></span></td>
-                                    </tr>
-                                </template>
-                                <tr v-else v-for="row in rows.data" :key="row.id">
+                                <tr v-for="row in rows.data" :key="row.id">
                                     <td><code>{{ row.kode_barang }}</code></td>
                                     <td>{{ row.part_number || '-' }}</td>
                                     <td>{{ row.nama_barang }}</td>
@@ -269,21 +248,14 @@ function submitClear() {
                                             {{ statusOf(row).label }}
                                         </span>
                                     </td>
-                                    <td>
-                                        <div class="d-flex justify-content-between">
-                                            <span>Rp</span>
-                                            <span class="ms-2">
-                                                {{ (row.stok_gudang * row.harga_jual).toLocaleString('id-ID') }}
-                                            </span>
-                                        </div>
-                                    </td>
+                                    <td><Rupiah :value="row.stok_gudang * row.harga_jual" /></td>
                                     <td>
                                         <Link :href="`/stok/${row.id}`"
                                             class="btn btn-sm btn-soft-primary border-0 shadow-sm bx bx-show font-size-16"
                                             title="Detail Barang"></Link>
                                     </td>
                                 </tr>
-                                <tr v-if="!loading && !rows.data.length">
+                                <tr v-if="!rows.data.length">
                                     <td colspan="11" class="text-center text-muted py-4">Tidak ada data</td>
                                 </tr>
                             </tbody>

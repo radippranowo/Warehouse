@@ -69,7 +69,7 @@ const clearForm = useForm({ confirm: '', targets: [] });
 
 const clearOptions = [
     { value: 'barang',       label: 'Barang',       hint: 'Otomatis ikut hapus stok per gudang & history mutasi' },
-    { value: 'mutasi',       label: 'Riwayat Mutasi', hint: 'Hanya transaksi in/out/transfer/adjust' },
+    { value: 'mutasi',       label: 'Riwayat Mutasi', hint: 'Hapus mutasi + lots FIFO + reset stok di semua gudang ke 0' },
     { value: 'category',     label: 'Master Kategori', hint: '' },
     { value: 'sub_category', label: 'Master Sub Kategori', hint: '' },
     { value: 'merk',         label: 'Master Merk', hint: '' },

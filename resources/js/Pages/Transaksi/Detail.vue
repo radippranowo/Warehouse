@@ -1,6 +1,7 @@
 <script setup>
 import { router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import Rupiah from '@/Components/Rupiah.vue';
 
 const props = defineProps({
     mutasi: { type: Object, required: true },
@@ -169,10 +170,10 @@ function getStatusBadge(status) {
                                     <td><strong>{{ item.qty?.toLocaleString('id-ID') || 0 }}</strong></td>
                                     <td>{{ item.barang?.satuan || '-' }}</td>
                                     <td v-if="mutasi.tipe === 'in' || mutasi.tipe === 'out'">
-                                        Rp {{ (item.harga_satuan || 0).toLocaleString('id-ID') }}
+                                        <Rupiah :value="item.harga_satuan" />
                                     </td>
                                     <td v-if="mutasi.tipe === 'in' || mutasi.tipe === 'out'">
-                                        <strong>Rp {{ ((item.qty || 0) * (item.harga_satuan || 0)).toLocaleString('id-ID') }}</strong>
+                                        <Rupiah :value="(item.qty || 0) * (item.harga_satuan || 0)" bold />
                                     </td>
                                     <td v-if="mutasi.tipe === 'adjust'">{{ item.stok_sebelum?.toLocaleString('id-ID') || 0 }}</td>
                                     <td v-if="mutasi.tipe === 'adjust'">{{ item.stok_sesudah?.toLocaleString('id-ID') || 0 }}</td>
@@ -185,7 +186,7 @@ function getStatusBadge(status) {
                                     <th>{{ mutasi.total_qty?.toLocaleString('id-ID') || 0 }}</th>
                                     <th></th>
                                     <th></th>
-                                    <th><strong>Rp {{ (mutasi.total_value || 0).toLocaleString('id-ID') }}</strong></th>
+                                    <th><Rupiah :value="mutasi.total_value" bold /></th>
                                 </tr>
                             </tfoot>
                         </table>

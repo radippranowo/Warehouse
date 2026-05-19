@@ -136,7 +136,7 @@ function submit() {
             preserveState: false,
             onSuccess: () => {
                 window.toast?.success('Pengeluaran berhasil disimpan');
-                // Redirect langsung dengan replace untuk menghindari history stack
+                router.flushAll();
                 router.replace('/riwayat/barang-keluar');
             },
             onError: handleFormErrors,

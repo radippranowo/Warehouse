@@ -184,4 +184,81 @@ class StokController extends Controller
             ],
         ]);
     }
+
+    public function show(Barang $barang)
+    {
+        $barang->load([
+            'kategori:kode_category,nama_category',
+            'subKategori:kode_sub_category,nama_sub_category',
+            'merk:kode_merk,nama_merk',
+            'group:kode_group,nama_group',
+        ]);
+
+        // Stok per gudang (semua gudang, walaupun stok 0)
+        $stokPerGudang = DB::table('gudangs')
+            ->leftJoin('barang_stoks', function ($j) use ($barang) {
+                $j->on('barang_stoks.gudang_id', '=', 'gudangs.id')
+                  ->where('barang_stoks.barang_id', '=', $barang->id);
+            })
+            ->where('gudangs.is_active', true)
+            ->orderBy('gudangs.nama_gudang')
+            ->select([
+                'gudangs.id as gudang_id',
+                'gudangs.kode_gudang',
+                'gudangs.nama_gudang',
+                DB::raw('COALESCE(barang_stoks.stok, 0) as stok'),
+                DB::raw('COALESCE(barang_stoks.min_stok, 0) as min_stok'),
+            ])
+            ->get();
+
+        $totalStok = $stokPerGudang->sum('stok');
+
+        // FIFO lots aktif (qty_sisa > 0) — untuk lihat cost basis per batch
+        $lots = DB::table('stok_lots')
+            ->leftJoin('gudangs', 'stok_lots.gudang_id', '=', 'gudangs.id')
+            ->leftJoin('suppliers', 'stok_lots.supplier_id', '=', 'suppliers.id')
+            ->where('stok_lots.barang_id', $barang->id)
+            ->where('stok_lots.qty_sisa', '>', 0)
+            ->orderBy('stok_lots.tanggal')
+            ->orderBy('stok_lots.id')
+            ->select([
+                'stok_lots.id',
+                'stok_lots.tanggal',
+                'stok_lots.qty_in',
+                'stok_lots.qty_sisa',
+                'stok_lots.harga_beli',
+                'gudangs.nama_gudang',
+                'suppliers.nama_supplier',
+            ])
+            ->get();
+
+        // 10 mutasi terakhir untuk barang ini
+        $mutasiTerakhir = DB::table('stok_mutasi_items')
+            ->join('stok_mutasis', 'stok_mutasi_items.stok_mutasi_id', '=', 'stok_mutasis.id')
+            ->leftJoin('gudangs', 'stok_mutasis.gudang_id', '=', 'gudangs.id')
+            ->where('stok_mutasi_items.barang_id', $barang->id)
+            ->whereNull('stok_mutasis.cancelled_at')
+            ->orderBy('stok_mutasis.tanggal', 'desc')
+            ->orderBy('stok_mutasis.id', 'desc')
+            ->limit(10)
+            ->select([
+                'stok_mutasis.id',
+                'stok_mutasis.nomor_mutasi',
+                'stok_mutasis.tanggal',
+                'stok_mutasis.tipe',
+                'stok_mutasis.status',
+                'gudangs.nama_gudang',
+                'stok_mutasi_items.qty',
+                'stok_mutasi_items.harga_satuan',
+            ])
+            ->get();
+
+        return Inertia::render('Stok/Show', [
+            'barang'         => $barang,
+            'stokPerGudang'  => $stokPerGudang,
+            'totalStok'      => $totalStok,
+            'lots'           => $lots,
+            'mutasiTerakhir' => $mutasiTerakhir,
+        ]);
+    }
 }

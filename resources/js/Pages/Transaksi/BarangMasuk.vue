@@ -119,7 +119,8 @@ function submit() {
             preserveState: false,
             onSuccess: () => {
                 window.toast?.success('Pemasukan berhasil disimpan');
-                // Redirect langsung dengan replace untuk menghindari history stack
+                // Invalidate semua prefetch cache supaya stok/riwayat fresh.
+                router.flushAll();
                 router.replace('/riwayat/barang-masuk');
             },
             onError: handleFormErrors,

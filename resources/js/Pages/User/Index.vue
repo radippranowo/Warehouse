@@ -3,10 +3,8 @@ import { ref, computed, watch } from 'vue';
 import { router, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { useSingleFlight } from '@/composables/useSingleFlight';
-import { usePartialReloadLoading } from '@/composables/usePartialReloadLoading';
 
 const { busy, run } = useSingleFlight();
-const { loading } = usePartialReloadLoading('/user');
 
 const props = defineProps({
     users: { type: Object, required: true },
@@ -14,13 +12,13 @@ const props = defineProps({
     filters: { type: Object, default: () => ({}) },
 });
 
+
 defineOptions({ layout: AppLayout });
 
 const search = ref(props.filters.search || '');
 const roleFilter = ref(props.filters.role || '');
 const statusFilter = ref(props.filters.status || '');
 const perPage = ref(props.filters.per_page || 20);
-const skeletonRows = computed(() => Math.min(Number(perPage.value) || 10, 10));
 
 let searchTimer = null;
 
@@ -162,27 +160,7 @@ function getRoleBadge(roleName) {
                             </tr>
                         </thead>
                         <tbody>
-                            <template v-if="loading">
-                                <tr v-for="n in skeletonRows" :key="`skel-${n}`" class="skeleton-row">
-                                    <td><span class="skel skel-sm" style="width: 24px;"></span></td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <span class="skel" style="width: 28px; height: 28px; border-radius: 50%;"></span>
-                                            <span class="skel ms-2" style="width: 110px;"></span>
-                                        </div>
-                                    </td>
-                                    <td><span class="skel" style="width: 140px;"></span></td>
-                                    <td><span class="skel skel-pill" style="width: 70px;"></span></td>
-                                    <td class="text-center"><span class="skel skel-pill" style="width: 50px;"></span></td>
-                                    <td><span class="skel skel-sm" style="width: 70px;"></span></td>
-                                    <td>
-                                        <span class="skel skel-sm" style="width: 28px; height: 28px; border-radius: 4px;"></span>
-                                        <span class="skel skel-sm ms-1" style="width: 28px; height: 28px; border-radius: 4px;"></span>
-                                        <span class="skel skel-sm ms-1" style="width: 28px; height: 28px; border-radius: 4px;"></span>
-                                    </td>
-                                </tr>
-                            </template>
-                            <tr v-else v-for="(user, index) in users.data" :key="user.id">
+                            <tr v-for="(user, index) in users.data" :key="user.id">
                                 <td>{{ users.from + index }}</td>
                                 <td>
                                     <div class="d-flex align-items-center">
@@ -234,7 +212,7 @@ function getRoleBadge(roleName) {
                                     ></button>
                                 </td>
                             </tr>
-                            <tr v-if="!loading && users.data.length === 0">
+                            <tr v-if="users.data.length === 0">
                                 <td colspan="7" class="text-center text-muted py-4">
                                     <i class="bx bx-info-circle fs-1 d-block mb-2"></i>
                                     Tidak ada data user

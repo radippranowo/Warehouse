@@ -205,7 +205,7 @@ onBeforeUnmount(() => {
                 <div id="sidebar-menu">
                     <ul class="metismenu list-unstyled" id="side-menu">
                         <li>
-                            <Link href="/dashboard" class="waves-effect">
+                            <Link href="/dashboard" prefetch cache-for="15m" class="waves-effect">
                                 <i class="bx bx-home-alt"></i><span>Dashboard</span>
                             </Link>
                         </li>
@@ -214,13 +214,13 @@ onBeforeUnmount(() => {
                                 <i class="bx bx-package"></i><span>Data Master</span>
                             </a>
                             <ul class="sub-menu" aria-expanded="false">
-                                <li><Link href="/barang">Barang</Link></li>
-                                <li><Link href="/category">Kategori</Link></li>
-                                <li><Link href="/sub-category">Sub Kategori</Link></li>
-                                <li><Link href="/merk">Merk</Link></li>
-                                <li><Link href="/group">Group</Link></li>
-                                <li><Link href="/gudang">Gudang</Link></li>
-                                <li><Link href="/supplier">Supplier</Link></li>
+                             <li><Link href="/barang"   prefetch cache-for="15m">Barang</Link></li>
+                                <li><Link href="/category" prefetch cache-for="15m">Kategori</Link></li>
+                                <li><Link href="/sub-category" prefetch cache-for="15m">Sub Kategori</Link></li>
+                                <li><Link href="/merk"     prefetch cache-for="15m">Merk</Link></li>
+                                <li><Link href="/group"    prefetch cache-for="15m">Group</Link></li>
+                                <li><Link href="/gudang"   prefetch cache-for="15m">Gudang</Link></li>
+                                <li><Link href="/supplier" prefetch cache-for="15m">Supplier</Link></li>
                             </ul>
                         </li>
                         <li>
@@ -233,9 +233,9 @@ onBeforeUnmount(() => {
                                 <i class="bx bx-transfer"></i><span>Transaksi</span>
                             </a>
                             <ul class="sub-menu" aria-expanded="false">
-                                <li><Link href="/barang-masuk">Barang Masuk</Link></li>
-                                <li><Link href="/barang-keluar">Barang Keluar</Link></li>
-                                <li><Link href="/penyesuaian-stok">Penyesuaian Stok</Link></li>
+                                <li><Link href="/barang-masuk" prefetch cache-for="15m">Barang Masuk</Link></li>
+                                <li><Link href="/barang-keluar" prefetch cache-for="15m">Barang Keluar</Link></li>
+                                <li><Link href="/penyesuaian-stok" prefetch cache-for="15m">Penyesuaian Stok</Link></li>
                             </ul>
                         </li>
                         <li>
@@ -243,14 +243,14 @@ onBeforeUnmount(() => {
                                 <i class="bx bx-history"></i><span>Riwayat</span>
                             </a>
                             <ul class="sub-menu" aria-expanded="false">
-                                <li><Link href="/riwayat/semua">Semua Mutasi</Link></li>
-                                <li><Link href="/riwayat/barang-masuk">Riwayat Barang Masuk</Link></li>
-                                <li><Link href="/riwayat/barang-keluar">Riwayat Barang Keluar</Link></li>
-                                <li><Link href="/riwayat/penyesuaian">Riwayat Penyesuaian</Link></li>
+                                <li><Link href="/riwayat/semua" prefetch cache-for="15m">Semua Mutasi</Link></li>
+                                <li><Link href="/riwayat/barang-masuk" prefetch cache-for="15m">Riwayat Barang Masuk</Link></li>
+                                <li><Link href="/riwayat/barang-keluar" prefetch cache-for="15m">Riwayat Barang Keluar</Link></li>
+                                <li><Link href="/riwayat/penyesuaian" prefetch cache-for="15m">Riwayat Penyesuaian</Link></li>
                             </ul>
                         </li>
                         <li>
-                            <Link href="/laporan-keuntungan" class="waves-effect">
+                            <Link href="/laporan-keuntungan" prefetch cache-for="15m" class="waves-effect">
                                 <i class="bx bx-line-chart"></i><span>Laporan Keuntungan</span>
                             </Link>
                         </li>
