@@ -3,7 +3,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import SearchInput from '@/Components/SearchInput.vue';
-import { useTransaksiForm, useTransaksiKeyboard, handleFormErrors } from '@/Composables/useTransaksiForm';
+import { useTransaksiForm, useTransaksiKeyboard, handleFormErrors } from '@/composables/useTransaksiForm';
 
 const props = defineProps({
     barangs: { type: Array, required: true },
