@@ -23,14 +23,15 @@ nixPkgs = [
   "php83Extensions.dom",
   "php83Extensions.iconv",
   "php83Packages.composer",
-  "nodejs_20"
+  "nodejs_22"
 ]
 
 [phases.install]
 dependsOn = ["setup"]
 cmds = [
   "composer install --no-dev --optimize-autoloader --no-interaction --no-progress",
-  "npm ci --no-audit --no-fund"
+  "rm -f package-lock.json",
+  "npm install --legacy-peer-deps --include=optional --no-audit --no-fund"
 ]
 
 [phases.build]
