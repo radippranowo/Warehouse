@@ -1,0 +1,30 @@
+# Railway / Nixpacks build configuration untuk Laravel + Inertia + Vue
+# Docs: https://nixpacks.com/docs/configuration/file
+
+[phases.setup]
+nixPkgs = ["php83", "php83Packages.composer", "nodejs_20", "npm-9_x"]
+nixLibs = []
+
+[phases.install]
+dependsOn = ["setup"]
+cmds = [
+  "composer install --no-dev --optimize-autoloader --no-interaction --no-progress",
+  "npm ci --no-audit --no-fund"
+]
+
+[phases.build]
+dependsOn = ["install"]
+cmds = [
+  "npm run build",
+  "php artisan storage:link || true",
+  "php artisan config:cache",
+  "php artisan route:cache",
+  "php artisan view:cache"
+]
+
+[start]
+cmd = "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=$PORT"
+
+[variables]
+NIXPACKS_PHP_FALLBACK_PATH = "/index.php"
+NIXPACKS_PHP_ROOT_DIR = "/app/public"
