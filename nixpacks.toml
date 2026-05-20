@@ -34,15 +34,15 @@ cmds = [
   "npm install --legacy-peer-deps --include=optional --no-audit --no-fund"
 ]
 
+# Build hanya compile asset frontend. JANGAN cache config/route di sini —
+# env Railway (DB, APP_URL) baru tersedia saat runtime, bukan build.
 [phases.build]
 dependsOn = ["install"]
 cmds = [
-  "npm run build",
-  "php artisan storage:link || true",
-  "php artisan config:cache",
-  "php artisan route:cache",
-  "php artisan view:cache"
+  "npm run build"
 ]
 
+# Caching config/route/view dilakukan saat runtime (env sudah lengkap),
+# lalu migrate, lalu jalankan server di port yang Railway berikan.
 [start]
-cmd = "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=$PORT"
+cmd = "php artisan optimize:clear && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan migrate --force || true; php artisan serve --host=0.0.0.0 --port=${PORT:-8080}"

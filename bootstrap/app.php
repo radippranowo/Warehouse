@@ -22,6 +22,9 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Railway/Vercel/proxy: percaya semua proxy supaya HTTPS & host terdeteksi benar.
+        $middleware->trustProxies(at: '*');
+
         $middleware->web(append: [
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
