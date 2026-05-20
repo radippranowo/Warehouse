@@ -45,4 +45,4 @@ cmds = [
 # Caching config/route/view dilakukan saat runtime (env sudah lengkap),
 # lalu migrate, lalu jalankan server di port yang Railway berikan.
 [start]
-cmd = "php artisan optimize:clear && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan migrate --force && php artisan db:seed --class=RolePermissionSeeder --force || true; php artisan serve --host=0.0.0.0 --port=${PORT:-8080}"
+cmd = "php artisan migrate --force; php artisan db:seed --class=RolePermissionSeeder --force; php artisan optimize:clear; php artisan config:cache; php artisan route:cache; php artisan view:cache; php artisan serve --host=0.0.0.0 --port=${PORT:-8080}"
